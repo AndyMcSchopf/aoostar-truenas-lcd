@@ -48,3 +48,7 @@ RUN sed -i '1s/^\xEF\xBB\xBF//' /app/start.sh \
 # v0.6 visual editor
 COPY webui_v06.py /app/webui_v06.py
 RUN python3 -m py_compile /app/webui_v06.py /app/truenas-sensors.py
+
+# v0.6.1 native LCD editor
+COPY webui_v061.py /app/webui_v061.py
+RUN python3 -m py_compile /app/webui_v061.py /app/truenas-sensors.py

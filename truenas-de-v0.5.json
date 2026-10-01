@@ -1,0 +1,51 @@
+{
+  "preset": "AOOSTAR TrueNAS DE",
+  "version": "0.5.0",
+  "panels": [
+    {
+      "name": "SYSTEM",
+      "duration": 6,
+      "sensors": [
+        "cpu_usage_percent",
+        "temperature_cpu",
+        "mem_usage_percent",
+        "temperature_memory",
+        "temperature_gpu",
+        "truenas_net_down",
+        "truenas_net_up",
+        "truenas_uptime"
+      ]
+    },
+    {
+      "name": "SPEICHER / ZFS",
+      "duration": 7,
+      "sensors": [
+        "truenas_pools_healthy",
+        "truenas_pool_0_used_percent",
+        "truenas_pool_1_used_percent",
+        "truenas_pool_2_used_percent",
+        "truenas_pool_3_used_percent"
+      ]
+    },
+    {
+      "name": "TRUENAS",
+      "duration": 7,
+      "sensors": [
+        "truenas_version",
+        "truenas_system_status",
+        "truenas_apps_running",
+        "truenas_apps_stopped",
+        "truenas_apps_crashed",
+        "truenas_apps_updates",
+        "truenas_scrub_de"
+      ]
+    },
+    {
+      "name": "BILD",
+      "duration": 10,
+      "image": "images/panelbild",
+      "mode": "contain",
+      "overlay_sensors": []
+    }
+  ]
+}

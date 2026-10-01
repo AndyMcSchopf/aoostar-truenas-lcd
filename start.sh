@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 set -u
 CFG=/app/cfg
 SENS=$CFG/sensors
@@ -27,4 +27,5 @@ if [ -e "${LCD_DEVICE:-/dev/ttyACM0}" ]; then
 fi
 
 echo "Web Editor: http://<TRUENAS-IP>:8765"
-exec python3 /app/webui.py
+exec python3 /app/webui_v05.py
+

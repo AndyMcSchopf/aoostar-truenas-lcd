@@ -31,3 +31,9 @@ COPY defaults-v0.4.json /app/defaults-v0.4.json
 # v0.4.1 build gate: reject syntactically broken Python images
 RUN python3 -m py_compile /app/truenas-sensors.py /app/webui.py
 
+
+# v0.5 standalone German WebUI
+COPY webui_v05.py /app/webui_v05.py
+RUN mkdir -p /app/presets
+COPY truenas-de-v0.5.json /app/presets/truenas-de-v0.5.json
+RUN python3 -m py_compile /app/webui_v05.py /app/truenas-sensors.py

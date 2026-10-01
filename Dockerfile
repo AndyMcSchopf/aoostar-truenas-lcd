@@ -1,4 +1,4 @@
-﻿FROM debian:trixie-slim AS builder
+FROM debian:trixie-slim AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends curl build-essential pkg-config libudev-dev git ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
@@ -37,3 +37,10 @@ COPY webui_v05.py /app/webui_v05.py
 RUN mkdir -p /app/presets
 COPY truenas-de-v0.5.json /app/presets/truenas-de-v0.5.json
 RUN python3 -m py_compile /app/webui_v05.py /app/truenas-sensors.py
+
+# v0.5.1 start.sh portability gate
+RUN sed -i '1s/^\xEF\xBB\xBF//' /app/start.sh \
+    && sed -i 's/\r$//' /app/start.sh \
+    && chmod +x /app/start.sh \
+    && head -n 1 /app/start.sh | grep -Eq '^#!(/bin/bash|/usr/bin/env bash)$' \
+    && bash -n /app/start.sh

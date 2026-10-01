@@ -23,7 +23,7 @@ python3 /app/truenas-sensors.py &
 sleep 3
 
 if [ -e "${LCD_DEVICE:-/dev/ttyACM0}" ]; then
-  asterctl --config-dir "$CFG" --config monitor.json --sensor-path "$SENS/values.txt" --sensor-mapping "$CFG/sensor-mapping.cfg" &
+  asterctl --config-dir "$CFG" --font-dir /app/fonts --config monitor.json --sensor-path "$SENS/values.txt" --sensor-mapping "$CFG/sensor-mapping.cfg" &
 fi
 
 echo "Web Editor: http://<TRUENAS-IP>:8765"

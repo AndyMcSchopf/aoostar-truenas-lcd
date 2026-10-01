@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 import json, os, socket, ssl, time
 from pathlib import Path
 from websocket import create_connection
@@ -7,10 +7,13 @@ OUT = Path('/app/cfg/sensors/truenas.txt')
 INTERVAL = max(1, int(os.getenv('REFRESH_SECONDS', '5')))
 HOST = os.getenv('TRUENAS_HOST', '127.0.0.1')
 WS_URL = os.getenv('TRUENAS_WS_URL', f'wss://{HOST}/api/current')
-if KEY and not WS_URL.lower().startswith('wss://'):
-    raise SystemExit('SICHERHEITSFEHLER: Mit API-Key ist ausschliesslich wss:// erlaubt.')
 USER = os.getenv('TRUENAS_API_USER', '')
 KEY = os.getenv('TRUENAS_API_KEY', '')
+
+if KEY and not WS_URL.lower().startswith('wss://'):
+    raise RuntimeError('TrueNAS API key authentication requires wss://')
+
+
 VERIFY_TLS = os.getenv('TRUENAS_VERIFY_TLS', 'false').lower() in ('1','true','yes')
 NET_IFACE = os.getenv('TRUENAS_NET_IFACE', '')
 
@@ -189,3 +192,5 @@ while True:
         vals['truenas_api']='fehler'
         vals['truenas_api_error']=str(e).replace('\n',' ')[:160]
     write(vals)
+
+

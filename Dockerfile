@@ -1,4 +1,4 @@
-FROM debian:trixie-slim AS builder
+﻿FROM debian:trixie-slim AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends curl build-essential pkg-config libudev-dev git ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH=/root/.cargo/bin:$PATH
@@ -25,6 +25,9 @@ CMD ["/app/start.sh"]
 
 # v0.4 additions
 COPY webui_de.py /app/webui_de.py
-COPY patch-webui-de.py /tmp/patch-webui-de.py
-RUN python3 /tmp/patch-webui-de.py && rm -f /tmp/patch-webui-de.py
 COPY defaults-v0.4.json /app/defaults-v0.4.json
+
+
+# v0.4.1 build gate: reject syntactically broken Python images
+RUN python3 -m py_compile /app/truenas-sensors.py /app/webui.py
+

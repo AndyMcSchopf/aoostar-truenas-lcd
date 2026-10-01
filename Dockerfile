@@ -52,3 +52,7 @@ RUN python3 -m py_compile /app/webui_v06.py /app/truenas-sensors.py
 # v0.6.1 native LCD editor
 COPY webui_v061.py /app/webui_v061.py
 RUN python3 -m py_compile /app/webui_v061.py /app/truenas-sensors.py
+
+# v0.6.2 enterprise dark
+COPY webui_v062.py /app/webui_v062.py
+RUN python3 -m py_compile /app/webui_v062.py /app/truenas-sensors.py

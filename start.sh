@@ -27,5 +27,5 @@ if [ -e "${LCD_DEVICE:-/dev/ttyACM0}" ]; then
 fi
 
 echo "Web Editor: http://<TRUENAS-IP>:8765"
-exec python3 /app/webui_v062.py
+exec python3 /app/webui_v063.py
 

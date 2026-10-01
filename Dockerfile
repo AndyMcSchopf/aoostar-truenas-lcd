@@ -56,3 +56,7 @@ RUN python3 -m py_compile /app/webui_v061.py /app/truenas-sensors.py
 # v0.6.2 enterprise dark
 COPY webui_v062.py /app/webui_v062.py
 RUN python3 -m py_compile /app/webui_v062.py /app/truenas-sensors.py
+
+# v0.6.3 enterprise design system
+COPY webui_v063.py /app/webui_v063.py
+RUN python3 -m py_compile /app/webui_v063.py /app/truenas-sensors.py

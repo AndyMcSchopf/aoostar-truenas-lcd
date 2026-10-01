@@ -3,7 +3,7 @@ set -e
 echo "=== AOOSTAR TrueNAS LCD Manager v0.7 ==="
 mkdir -p /app/cfg/sensors /app/cfg/images /app/cfg/backups
 
-aster-sysinfo --refresh 5000 --output /app/cfg/sensors/hardware.txt &
+aster-sysinfo --refresh 5000 --out /app/cfg/sensors/hardware.txt &
 ASTER_SYSINFO_PID=$!
 
 python3 /app/truenas-sensors.py &

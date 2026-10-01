@@ -65,3 +65,6 @@ RUN python3 -m py_compile /app/webui_v063.py /app/truenas-sensors.py
 COPY webui_v07.py /app/webui_v07.py
 RUN python3 -m py_compile /app/webui_v07.py /app/truenas-sensors.py
 RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh && bash -n /app/start.sh
+
+# v0.7.1 aster-sysinfo CLI gate
+RUN bash -n /app/start.sh && aster-sysinfo --help 2>&1 | grep -q -- '--out'

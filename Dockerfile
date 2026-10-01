@@ -11,10 +11,11 @@ COPY --from=builder /build/aoostar-rs/target/release/aster-sysinfo /usr/local/bi
 RUN git clone --depth 1 https://github.com/xavtb78/aoostar-proxmox-lcd.git /tmp/upstream && \
     mkdir -p /defaults/cfg /app/cfg/sensors && \
     cp -a /tmp/upstream/cfg/. /defaults/cfg/ && cp /tmp/upstream/webui.py /app/webui.py && \
-    sed -i 's/AOOSTAR Screen Editor v2/AOOSTAR TrueNAS Screen Editor/g; s/proxmox_panel.jpg/truenas_panel.jpg/g' /app/webui.py && \
     if [ -f /defaults/cfg/proxmox_panel.jpg ]; then cp /defaults/cfg/proxmox_panel.jpg /defaults/cfg/truenas_panel.jpg; fi && \
     sed -i 's/proxmox_/truenas_/g; s/Proxmox/TrueNAS/g; s/proxmox_panel.jpg/truenas_panel.jpg/g' /defaults/cfg/monitor.json /defaults/cfg/sensor-mapping.cfg 2>/dev/null || true && \
     rm -rf /tmp/upstream
+COPY localize-webui.py /tmp/localize-webui.py
+RUN python3 /tmp/localize-webui.py && rm /tmp/localize-webui.py
 COPY start.sh truenas-sensors.py merge-sensors.sh /app/
 RUN mkdir -p /app/fonts && ln -sf /usr/share/fonts/truetype/noto/NotoSans-Bold.ttf /app/fonts/HarmonyOS_Sans_SC_Bold.ttf
 RUN chmod +x /app/start.sh /app/merge-sensors.sh

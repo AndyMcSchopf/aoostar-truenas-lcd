@@ -14,6 +14,7 @@ services:
       PYTHONUNBUFFERED: "1"
       REFRESH_SECONDS: "5"
       TRUENAS_HOST: "127.0.0.1"
+      TRUENAS_WS_URL: "wss://127.0.0.1/api/current"
       TRUENAS_API_USER: ""
       TRUENAS_API_KEY: ""
       TRUENAS_VERIFY_TLS: "false"

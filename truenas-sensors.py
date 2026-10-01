@@ -7,6 +7,8 @@ OUT = Path('/app/cfg/sensors/truenas.txt')
 INTERVAL = max(1, int(os.getenv('REFRESH_SECONDS', '5')))
 HOST = os.getenv('TRUENAS_HOST', '127.0.0.1')
 WS_URL = os.getenv('TRUENAS_WS_URL', f'wss://{HOST}/api/current')
+if KEY and not WS_URL.lower().startswith('wss://'):
+    raise SystemExit('SICHERHEITSFEHLER: Mit API-Key ist ausschliesslich wss:// erlaubt.')
 USER = os.getenv('TRUENAS_API_USER', '')
 KEY = os.getenv('TRUENAS_API_KEY', '')
 VERIFY_TLS = os.getenv('TRUENAS_VERIFY_TLS', 'false').lower() in ('1','true','yes')
@@ -141,13 +143,14 @@ while True:
       'truenas_net_up': fmt_rate(up),
       'truenas_net_down_bytes_sec': str(down),
       'truenas_net_up_bytes_sec': str(up),
-      'truenas_api': 'disabled' if not KEY else 'error',
+      'truenas_api': 'deaktiviert' if not KEY else 'fehler',
     }
     prev_rx,prev_tx,prev_t=rx,tx,now
     try:
         snap=api_snapshot()
         if snap:
             vals['truenas_api']='ok'
+            vals['truenas_system_status']='OK'
             sys=snap['system']; pools=snap['pools']; apps=snap['apps']
             vals['truenas_hostname']=sys.get('hostname','n/a')
             vals['truenas_version']=sys.get('version','n/a')
@@ -158,12 +161,13 @@ while True:
             crashed=sum(1 for a in apps if a.get('state')=='CRASHED')
             upgrades=sum(1 for a in apps if a.get('upgrade_available') or a.get('image_updates_available'))
             vals.update({
-                'truenas_apps':f'{running}/{len(apps)}', 'truenas_apps_running':str(running),
+                'truenas_apps':f'{running}/{len(apps)}', 'truenas_apps_de':f'{running} von {len(apps)} aktiv', 'truenas_apps_running':str(running),
                 'truenas_apps_stopped':str(stopped), 'truenas_apps_crashed':str(crashed),
                 'truenas_apps_updates':str(upgrades), 'truenas_pool_count':str(len(pools)),
             })
             healthy=sum(1 for p in pools if p.get('healthy') is True or p.get('status')=='ONLINE')
             vals['truenas_pools_healthy']=f'{healthy}/{len(pools)}'
+            vals['truenas_pools_healthy_de']=f'{healthy} von {len(pools)} OK'
             vals['truenas_pool_health']=' '.join(f"{p.get('name')}:{p.get('status')}" for p in pools) or 'no pools'
             active=[]
             for i,p in enumerate(pools[:8]):
@@ -180,7 +184,8 @@ while True:
                 vals[f'truenas_pool_{i}_scan']=scan
                 if scan != 'idle': active.append(f'{name}:{scan}')
             vals['truenas_scrub']=' '.join(active) if active else 'idle'
+            vals['truenas_scrub_de']=' '.join(active) if active else 'kein Scrub aktiv'
     except Exception as e:
-        vals['truenas_api']='error'
+        vals['truenas_api']='fehler'
         vals['truenas_api_error']=str(e).replace('\n',' ')[:160]
     write(vals)

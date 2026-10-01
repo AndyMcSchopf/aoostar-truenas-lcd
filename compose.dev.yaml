@@ -1,0 +1,23 @@
+services:
+  aoostar-truenas-lcd:
+    build: .
+    image: aoostar-truenas-lcd:local
+    container_name: aoostar-truenas-lcd
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      - aoostar-config:/app/cfg
+      - /sys/class/net:/sys/class/net:ro
+    environment:
+      TZ: Europe/Berlin
+      PYTHONUNBUFFERED: "1"
+      TRUENAS_HOST: "127.0.0.1"
+      TRUENAS_API_USER: ""
+      TRUENAS_API_KEY: ""
+      TRUENAS_VERIFY_TLS: "false"
+      TRUENAS_NET_IFACE: ""
+      REFRESH_SECONDS: "5"
+volumes:
+  aoostar-config:

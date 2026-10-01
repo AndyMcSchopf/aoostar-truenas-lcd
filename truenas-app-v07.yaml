@@ -1,0 +1,19 @@
+services:
+  aoostar-truenas-lcd:
+    image: ghcr.io/andymcschopf/aoostar-truenas-lcd:latest
+    container_name: aoostar-truenas-lcd
+    restart: unless-stopped
+    network_mode: host
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      - /mnt/NVME_2TB_Pool_01/data/aoostar-truenas-lcd/cfg:/app/cfg
+      - /sys/class/net:/sys/class/net:ro
+    environment:
+      TZ: Europe/Berlin
+      PYTHONUNBUFFERED: "1"
+      REFRESH_SECONDS: "5"
+      TRUENAS_HOST: "127.0.0.1"
+      TRUENAS_API_USER: "aoostar_lcd"
+      TRUENAS_API_KEY: "HIER_DEINEN_API_KEY_EINTRAGEN"
+      TRUENAS_VERIFY_TLS: "false"

@@ -60,3 +60,8 @@ RUN python3 -m py_compile /app/webui_v062.py /app/truenas-sensors.py
 # v0.6.3 enterprise design system
 COPY webui_v063.py /app/webui_v063.py
 RUN python3 -m py_compile /app/webui_v063.py /app/truenas-sensors.py
+
+# v0.7 consolidation
+COPY webui_v07.py /app/webui_v07.py
+RUN python3 -m py_compile /app/webui_v07.py /app/truenas-sensors.py
+RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh && bash -n /app/start.sh

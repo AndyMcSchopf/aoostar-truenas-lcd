@@ -22,3 +22,9 @@ RUN chmod +x /app/start.sh /app/merge-sensors.sh
 WORKDIR /app
 EXPOSE 8765
 CMD ["/app/start.sh"]
+
+# v0.4 additions
+COPY webui_de.py /app/webui_de.py
+COPY patch-webui-de.py /tmp/patch-webui-de.py
+RUN python3 /tmp/patch-webui-de.py && rm -f /tmp/patch-webui-de.py
+COPY defaults-v0.4.json /app/defaults-v0.4.json

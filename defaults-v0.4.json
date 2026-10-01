@@ -1,0 +1,73 @@
+{
+  "version": "0.4",
+  "description": "Importierbares deutsches TrueNAS-Layout; bestehende monitor.json bleibt erhalten.",
+  "panels": [
+    {
+      "name": "SYSTEM",
+      "duration": 6,
+      "elements": [
+        {
+          "name": "CPU-Auslastung",
+          "label": "cpu_usage_percent"
+        },
+        {
+          "name": "CPU-Temperatur",
+          "label": "temperature_cpu"
+        },
+        {
+          "name": "RAM",
+          "label": "mem_usage_percent"
+        },
+        {
+          "name": "GPU",
+          "label": "temperature_gpu"
+        },
+        {
+          "name": "Download",
+          "label": "truenas_net_down"
+        },
+        {
+          "name": "Upload",
+          "label": "truenas_net_up"
+        }
+      ]
+    },
+    {
+      "name": "LAUFWERKE",
+      "duration": 6,
+      "elements": []
+    },
+    {
+      "name": "TRUENAS / ZFS",
+      "duration": 8,
+      "elements": [
+        {
+          "name": "Version",
+          "label": "truenas_version"
+        },
+        {
+          "name": "Pools OK",
+          "label": "truenas_pools_healthy"
+        },
+        {
+          "name": "Apps aktiv",
+          "label": "truenas_apps_running"
+        },
+        {
+          "name": "Pool 1",
+          "label": "truenas_pool_0_name"
+        },
+        {
+          "name": "Pool 1 Belegung",
+          "label": "truenas_pool_0_used_percent"
+        }
+      ]
+    },
+    {
+      "name": "BILD",
+      "duration": 10,
+      "image_mode": "contain",
+      "elements": []
+    }
+  ]
+}

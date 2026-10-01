@@ -44,3 +44,7 @@ RUN sed -i '1s/^\xEF\xBB\xBF//' /app/start.sh \
     && chmod +x /app/start.sh \
     && head -n 1 /app/start.sh | grep -Eq '^#!(/bin/bash|/usr/bin/env bash)$' \
     && bash -n /app/start.sh
+
+# v0.6 visual editor
+COPY webui_v06.py /app/webui_v06.py
+RUN python3 -m py_compile /app/webui_v06.py /app/truenas-sensors.py

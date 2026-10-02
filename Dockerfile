@@ -85,3 +85,7 @@ RUN bash -n /app/start.sh \
 # v0.7.4 webui gate
 RUN python3 -m py_compile /app/webui_v07.py
 RUN grep -q 'async function init' /app/webui_v07.py && grep -q 'uploadImage' /app/webui_v07.py
+
+# v0.7.5 editor gate
+RUN python3 -m py_compile /app/webui_v07.py
+RUN grep -q 'function renderInspector' /app/webui_v07.py && grep -q 'function sparkHTML' /app/webui_v07.py && grep -q 'function imageProp' /app/webui_v07.py && grep -q 'function dragElement' /app/webui_v07.py

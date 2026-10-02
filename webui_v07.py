@@ -112,52 +112,107 @@ main{display:grid;grid-template-columns:280px minmax(600px,1fr) 285px;gap:12px;p
 <div><div class="pane"><b>EIGENSCHAFTEN</b><div id="props" class="muted">Element auswählen.</div></div><div class="pane"><b>BILDER</b><div id="imagelist"></div></div><div class="pane"><b>LCD</b><button class="btn" onclick="prepare()">LCD-KANDIDAT ERZEUGEN</button><div id="status" class="muted"></div></div></div>
 </main><script>
 "use strict";
-let L=null,V={},S=[],T={},pi=0;
-const el=id=>document.getElementById(id);
+let L=null,V={},S=[],T={},pi=0,ei=-1,imgEdit=false,scale=1,HIST={};
+const $=id=>document.getElementById(id);
+const accents=["orange","amber","violet","blue","pink"];
 async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(u+" HTTP "+r.status);return await r.json();}
+function p(){return L.panels[pi]} function e(){return p().elements[ei]}
+function th(){return T[L.theme]||T["lcars-orange"]}
+function color(a){return th()[a]||th().orange}
+function pushHistory(){for(const [k,v] of Object.entries(V)){let n=parseFloat(String(v).replace(",","."));if(!Number.isFinite(n))continue;(HIST[k]??=[]).push(n);if(HIST[k].length>60)HIST[k].shift();}}
 async function init(){
  try{
-  L=await jget("/api/layout"); V=await jget("/api/values"); S=await jget("/api/sensors"); T=await jget("/api/themes");
-  renderPanels(); renderSensors(); renderCanvas(); await renderImages();
-  const q=el("q"); if(q)q.addEventListener("input",renderSensors);
-  const f=el("file"); if(f)f.addEventListener("change",uploadImage);
-  const ub=el("uploadBtn"); if(ub&&f)ub.addEventListener("click",()=>f.click());
- }catch(e){console.error(e);const s=el("status");if(s)s.textContent="Initialisierung fehlgeschlagen: "+e;}
+  [L,V,S,T]=await Promise.all([jget("/api/layout"),jget("/api/values"),jget("/api/sensors"),jget("/api/themes")]);pushHistory();
+  ensureDefaults();wireStatic();render();await renderImages();addEventListener("resize",fit);
+ }catch(err){console.error(err);setStatus("Initialisierung fehlgeschlagen: "+err);}
 }
-function renderPanels(){
- const x=el("panels"); if(!x||!L||!L.panels)return;
- x.innerHTML=L.panels.map((p,i)=>'<button class="btn '+(i===pi?'active':'')+'" data-i="'+i+'">'+(i+1)+' '+p.name+'</button>').join("");
- x.querySelectorAll("button").forEach(b=>b.onclick=()=>{pi=Number(b.dataset.i);renderPanels();renderCanvas();});
+function ensureDefaults(){
+ if(!L.theme)L.theme="lcars-orange";
+ if(!L.panels||L.panels.length<4)return;
+ if(!L.panels[0].elements?.length)L.panels[0].elements=systemDefaults();
+ if(!L.panels[1].elements?.length)L.panels[1].elements=zfsDefaults();
+ if(!L.panels[2].elements?.length)L.panels[2].elements=trueNasDefaults();
+ if(!L.panels[3].elements?.length)L.panels[3].elements=imageDefaults();
 }
-function renderSensors(){
- const x=el("sensors");if(!x)return;const q=((el("q")||{}).value||"").toLowerCase();
- x.innerHTML=S.filter(s=>(s.name+" "+s.id).toLowerCase().includes(q)).map(s=>'<div class="sensoritem"><b>'+s.name+'</b><br><span class="muted">'+s.value+'</span></div>').join("");
+function systemDefaults(){return [
+ {type:"lcars_header",text:"TRUESTARMAX / SYSTEM 01",x:18,y:14,w:924,h:42,accent:"orange"},
+ {type:"lcars_card",text:"CPU",x:18,y:76,w:292,h:250,accent:"orange"},
+ {type:"sensor",label:"cpu_usage_percent",title:"AUSLASTUNG",x:48,y:122,size:36,unit:"%"},
+ {type:"sensor",label:"temperature_cpu",title:"TEMPERATUR",x:178,y:128,size:25,unit:"°C"},
+ {type:"bar",label:"cpu_usage_percent",x:48,y:185,w:232,h:13,max:100,accent:"orange"},
+ {type:"sparkline",label:"cpu_usage_percent",x:48,y:218,w:232,h:75,accent:"orange",max:100},
+ {type:"lcars_card",text:"RAM",x:330,y:76,w:292,h:250,accent:"violet"},
+ {type:"sensor",label:"mem_usage_percent",title:"BELEGUNG",x:360,y:122,size:36,unit:"%"},
+ {type:"sensor",label:"temperature_memory",title:"TEMPERATUR",x:490,y:128,size:25,unit:"°C"},
+ {type:"bar",label:"mem_usage_percent",x:360,y:185,w:232,h:13,max:100,accent:"violet"},
+ {type:"sparkline",label:"mem_usage_percent",x:360,y:218,w:232,h:75,accent:"violet",max:100},
+ {type:"lcars_card",text:"NETZWERK",x:642,y:76,w:300,h:250,accent:"blue"},
+ {type:"sensor",label:"truenas_net_down",title:"DOWNLOAD",x:672,y:122,size:24,unit:""},
+ {type:"sensor",label:"truenas_net_up",title:"UPLOAD",x:672,y:174,size:24,unit:""},
+ {type:"sparkline",label:"truenas_net_down_bytes_sec",x:672,y:225,w:240,h:68,accent:"blue",auto:true},
+ {type:"badge",label:"truenas_system_status",x:812,y:18,w:118,h:32}
+]}
+function zfsDefaults(){let a=[{type:"lcars_header",text:"SPEICHER / ZFS 02",x:18,y:14,w:924,h:42,accent:"amber"}];["orange","violet","blue","pink"].forEach((c,i)=>a.push({type:"pool",index:i,x:i%2?492:18,y:i<2?76:222,w:450,h:125,accent:c}));return a}
+function trueNasDefaults(){return [
+ {type:"lcars_header",text:"TRUENAS CORE SERVICES 03",x:18,y:14,w:924,h:42,accent:"orange"},
+ {type:"lcars_card",text:"APPS",x:18,y:78,w:300,h:230,accent:"violet"},
+ {type:"sensor",label:"truenas_apps_running",title:"AKTIV",x:48,y:128,size:36,unit:""},
+ {type:"sensor",label:"truenas_apps_stopped",title:"GESTOPPT",x:172,y:134,size:24,unit:""},
+ {type:"bar",label:"truenas_apps_running",x:48,y:188,w:238,h:12,max:19,accent:"violet"},
+ {type:"sensor",label:"truenas_apps_updates",title:"UPDATES",x:48,y:226,size:26,unit:""},
+ {type:"sensor",label:"truenas_apps_crashed",title:"FEHLER",x:172,y:226,size:26,unit:""},
+ {type:"lcars_card",text:"ZFS / SYSTEM",x:340,y:78,w:602,h:230,accent:"orange"},
+ {type:"sensor",label:"truenas_pools_healthy_de",title:"POOLS",x:372,y:128,size:30,unit:""},
+ {type:"sensor",label:"truenas_scrub_de",title:"SCRUB",x:372,y:192,size:16,unit:""},
+ {type:"sensor",label:"truenas_version",title:"VERSION",x:372,y:250,size:18,unit:""},
+ {type:"badge",label:"truenas_system_status",x:798,y:110,w:112,h:34},
+ {type:"sensor",label:"truenas_uptime",title:"LAUFZEIT",x:18,y:330,size:18,unit:""}
+]}
+function imageDefaults(){return [{type:"lcars_footer",text:"TRUESTARMAX / VISUAL 04",x:18,y:320,w:924,h:40,accent:"orange"},{type:"badge",label:"truenas_system_status",x:700,y:324,w:100,h:30},{type:"sensor",label:"temperature_cpu",title:"CPU",x:820,y:328,size:18,unit:"°C"}]}
+function wireStatic(){
+ const q=$("q");if(q)q.addEventListener("input",renderSensors);
+ const f=$("file");if(f)f.addEventListener("change",uploadImage);
+ const ub=$("uploadBtn");if(ub&&f)ub.onclick=()=>f.click();
+ const sv=$("save");if(sv)sv.onclick=save;
+ const ie=$("imageEdit");if(ie)ie.onclick=toggleImageEdit;
+ const md=$("mode");if(md)md.onchange=imageProp;
+ ["zoom","ix","iy"].forEach(id=>{if($(id))$(id).onchange=imageProp});
 }
+function render(){renderPanels();renderCanvas();renderSensors();renderInspector();fit()}
+function fit(){const vp=$("vp");if(!vp)return;scale=Math.min(1,vp.clientWidth/960);$("canvas").style.transform=`scale(${scale})`;vp.style.height=(376*scale)+"px"}
+function renderPanels(){const x=$("panels");if(!x)return;x.innerHTML=L.panels.map((z,i)=>`<button class="btn ${i===pi?"active":""}" data-i="${i}">${i+1} ${z.name}</button>`).join("");x.querySelectorAll("button").forEach(b=>b.onclick=()=>{pi=+b.dataset.i;ei=-1;render()});if($("pname"))$("pname").value=p().name;if($("pdur"))$("pdur").value=p().duration;syncImageControls()}
 function renderCanvas(){
- const c=el("canvas");if(!c||!L||!L.panels)return;
- const p=L.panels[pi],th=T[L.theme]||T["lcars-orange"]||{bg:"#050608",orange:"#F29A49",text:"#F5EEE6",panel:"#111319"};
- c.style.backgroundColor=th.bg;c.style.backgroundImage=p.background?'url("/user-images/'+encodeURIComponent(p.background)+'")':"none";c.style.backgroundRepeat="no-repeat";c.style.backgroundSize="cover";
- let h='<div style="position:absolute;left:18px;top:14px;width:924px;height:42px;border-radius:22px;background:'+th.orange+';color:#111;font-weight:bold;padding:12px 20px">'+p.name.toUpperCase()+'</div>';
- if(pi===0)h+=block("CPU","cpu_usage_percent",70,100,th)+block("CPU TEMP","temperature_cpu",330,100,th)+block("RAM","mem_usage_percent",590,100,th)+block("DOWNLOAD","truenas_net_down",70,245,th)+block("UPLOAD","truenas_net_up",590,245,th);
- if(pi===1)for(let i=0;i<4;i++)h+=pool(i,i%2?492:18,i<2?80:220,th);
- if(pi===2)h+=block("APPS AKTIV","truenas_apps_running",70,110,th)+block("UPDATES","truenas_apps_updates",350,110,th)+block("POOLS","truenas_pools_healthy_de",70,245,th)+block("VERSION","truenas_version",590,245,th);
- c.innerHTML=h;
+ const c=$("canvas");if(!c)return;const P=p(),im=P.image||{mode:"cover",x:0,y:0,zoom:1},theme=th();
+ c.style.backgroundColor=theme.bg;c.style.backgroundImage=P.background?`url('/user-images/${encodeURIComponent(P.background)}')`:"none";c.style.backgroundRepeat="no-repeat";c.style.backgroundPosition=`${im.x||0}px ${im.y||0}px`;c.style.backgroundSize=im.mode==="contain"?"contain":im.mode==="cover"?`${(im.zoom||1)*100}% auto`:"auto";
+ c.innerHTML=(P.elements||[]).map((z,i)=>elementHTML(z,i,theme)).join("");
+ c.querySelectorAll("[data-ei]").forEach(n=>{n.onclick=ev=>{ev.stopPropagation();ei=+n.dataset.ei;renderInspector();renderCanvas()};n.onmousedown=ev=>dragElement(ev,+n.dataset.ei)});
 }
-function block(n,k,x,y,th){return '<div style="position:absolute;left:'+x+'px;top:'+y+'px;color:'+th.text+';font-size:30px"><span style="display:block;font-size:14px;color:#AFA7A0">'+n+'</span>'+(V[k]??"–")+'</div>';}
-function pool(i,x,y,th){const k="truenas_pool_"+i+"_";return '<div style="position:absolute;left:'+x+'px;top:'+y+'px;width:450px;height:125px;background:'+th.panel+';border-radius:22px;overflow:hidden"><div style="height:30px;background:'+th.orange+';color:#111;padding:6px 15px;font-weight:bold">'+(V[k+"name"]??("POOL "+(i+1)))+'</div><div style="padding:15px 18px;font-size:28px">'+(V[k+"used_percent"]??"–")+' %</div></div>';}
-async function renderImages(){
- const x=el("images")||el("imagelist");if(!x)return;const a=await jget("/api/images");
- x.innerHTML=a.map(v=>'<div class="sensoritem"><b>'+v.name+'</b><br>'+v.width+' × '+v.height+' <button class="btn use" data-name="'+v.name+'">NUTZEN</button></div>').join("");
- x.querySelectorAll(".use").forEach(b=>b.onclick=async()=>{L.panels[pi].background=b.dataset.name;await save();renderCanvas();});
+function elementHTML(z,i,t){const sel=i===ei?"outline:2px dashed "+t.amber+";outline-offset:2px;":"",base=`data-ei="${i}" style="${sel}position:absolute;left:${z.x}px;top:${z.y}px;`;
+ if(z.type==="lcars_header"||z.type==="lcars_footer")return `<div ${base}width:${z.w}px;height:${z.h}px;border-radius:22px;background:${color(z.accent)};color:#111;font-weight:900;padding:12px 20px">${z.text}</div>`;
+ if(z.type==="lcars_card")return `<div ${base}width:${z.w}px;height:${z.h}px;background:${t.panel};border-radius:22px;overflow:hidden"><div style="height:31px;background:${color(z.accent)};color:#111;font-weight:900;padding:7px 16px">${z.text}</div></div>`;
+ if(z.type==="sensor")return `<div ${base}font-size:${z.size}px;color:${t.text}"><span style="display:block;font-size:.52em;color:${t.muted};letter-spacing:.08em">${z.title||""}</span>${V[z.label]??"–"} ${z.unit||""}</div>`;
+ if(z.type==="bar"){let n=parseFloat(V[z.label]||0),pct=Math.max(0,Math.min(100,n/(z.max||100)*100));return `<div ${base}width:${z.w}px;height:${z.h}px;background:#242932;border-radius:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color(z.accent)}"></div></div>`}
+ if(z.type==="sparkline")return sparkHTML(z,i,t,base);
+ if(z.type==="badge"){let v=String(V[z.label]??"–"),ok=/OK|ONLINE/i.test(v),cc=ok?"#66CC99":t.amber;return `<div ${base}width:${z.w}px;height:${z.h}px;border:2px solid ${cc};color:${cc};border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:800;background:#090B0F">${v}</div>`}
+ if(z.type==="pool"){let k=`truenas_pool_${z.index}_`,pct=parseFloat(V[k+"used_percent"]||0),cc=pct>=90?"#CC6666":pct>=75?"#FFCC66":color(z.accent);return `<div ${base}width:${z.w}px;height:${z.h}px;background:${t.panel};border-radius:22px;overflow:hidden"><div style="height:31px;background:${cc};color:#111;font-weight:900;padding:7px 15px">${V[k+"name"]??"POOL"} · ${V[k+"status"]??""}</div><div style="padding:13px 18px"><span style="font-size:30px">${V[k+"used_percent"]??"–"} %</span><span style="margin-left:20px;color:${t.muted}">${V[k+"used"]??""} / ${V[k+"size"]??""}</span><div style="height:11px;background:#242932;border-radius:8px;margin-top:9px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${cc}"></div></div></div></div>`}
+ if(z.type==="text")return `<div ${base}font-size:${z.size||24}px;color:${t.text}">${z.text||"TEXT"}</div>`;
+ return "";
 }
-async function uploadImage(){
- const f=el("file").files[0];if(!f)return;const fd=new FormData();fd.append("image",f);
- const r=await fetch("/api/images",{method:"POST",body:fd});const v=await r.json();
- if(!r.ok){console.error(v);return;}L.panels[pi].background=v.file;await save();await renderImages();renderCanvas();
-}
-async function save(){await fetch("/api/layout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(L)});}
-init();
-setInterval(async()=>{try{V=await jget("/api/values");renderCanvas();}catch(e){}},5000);
+function sparkHTML(z,i,t,base){let a=HIST[z.label]||[],w=z.w,h=z.h;if(a.length<2)return `<div ${base}width:${w}px;height:${h}px;border-bottom:1px solid ${color(z.accent)}"></div>`;let max=z.auto?Math.max(...a,1):(z.max||100),min=z.auto?Math.min(...a,0):0,range=Math.max(1,max-min);let pts=a.map((v,n)=>`${(n/(a.length-1)*w).toFixed(1)},${(h-(v-min)/range*h).toFixed(1)}`).join(" ");return `<svg data-ei="${i}" style="${base.substring(base.indexOf("style=")+7)}width:${w}px;height:${h}px;overflow:visible" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${color(z.accent)}" stroke-width="3"/><line x1="0" y1="${h-1}" x2="${w}" y2="${h-1}" stroke="#30343B"/></svg>`}
+function dragElement(ev,i){if(imgEdit)return;ev.preventDefault();ei=i;let z=e(),sx=ev.clientX,sy=ev.clientY,ox=z.x,oy=z.y;function mv(a){z.x=Math.round(Math.max(0,Math.min(959,ox+(a.clientX-sx)/scale)));z.y=Math.round(Math.max(0,Math.min(375,oy+(a.clientY-sy)/scale)));renderCanvas();renderInspector()}function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up)}addEventListener("mousemove",mv);addEventListener("mouseup",up)}
+function renderSensors(){const x=$("sensors");if(!x)return;const q=(($("q")||{}).value||"").toLowerCase();x.innerHTML=S.filter(s=>(s.name+" "+s.id).toLowerCase().includes(q)).map(s=>`<div class="sensoritem addSensor" data-id="${s.id}" data-name="${s.name}"><b>${s.name}</b><br><span class="muted">${s.value}</span></div>`).join("");x.querySelectorAll(".addSensor").forEach(n=>n.onclick=()=>add({type:"sensor",label:n.dataset.id,title:n.dataset.name,x:80,y:90,size:24,unit:""}))}
+function renderInspector(){const x=$("props");if(!x)return;if(ei<0){x.innerHTML=`<div class="tools"><button class="btn" id="addText">TEXT</button><button class="btn" id="addCard">LCARS CARD</button><button class="btn" id="addBar">BALKEN</button><button class="btn" id="addSpark">KURVE</button><button class="btn" id="addBadge">STATUS</button></div>`;bindAddButtons();return}let z=e();x.innerHTML=`<label>Typ<input value="${z.type}" disabled></label><label>Titel/Text<input id="et" value="${z.title??z.text??""}"></label><div class="row"><input id="ex" type="number" value="${z.x}"><input id="ey" type="number" value="${z.y}"></div><label>Akzent<select id="ea">${accents.map(a=>`<option>${a}</option>`).join("")}</select></label><div class="tools"><button class="btn" id="dup">DUPLIZIEREN</button><button class="btn" id="del">LÖSCHEN</button></div>`;$("ea").value=z.accent||"orange";["et","ex","ey","ea"].forEach(id=>$(id).onchange=applyInspector);$("dup").onclick=duplicate;$("del").onclick=del}
+function bindAddButtons(){if($("addText"))$("addText").onclick=()=>add({type:"text",text:"TEXT",x:80,y:90,size:24});if($("addCard"))$("addCard").onclick=()=>add({type:"lcars_card",text:"GRUPPE",x:80,y:80,w:300,h:150,accent:"orange"});if($("addBar"))$("addBar").onclick=()=>add({type:"bar",label:"cpu_usage_percent",x:80,y:90,w:260,h:14,max:100,accent:"orange"});if($("addSpark"))$("addSpark").onclick=()=>add({type:"sparkline",label:"cpu_usage_percent",x:80,y:90,w:260,h:80,max:100,accent:"orange"});if($("addBadge"))$("addBadge").onclick=()=>add({type:"badge",label:"truenas_system_status",x:80,y:90,w:110,h:32})}
+function applyInspector(){let z=e();if(z.type==="text"||z.type.startsWith("lcars_"))z.text=$("et").value;else z.title=$("et").value;z.x=+$("ex").value;z.y=+$("ey").value;z.accent=$("ea").value;renderCanvas()}
+function add(z){p().elements??=[];p().elements.push(z);ei=p().elements.length-1;renderCanvas();renderInspector()}function duplicate(){let z=JSON.parse(JSON.stringify(e()));z.x+=14;z.y+=14;p().elements.push(z);ei=p().elements.length-1;renderCanvas();renderInspector()}function del(){p().elements.splice(ei,1);ei=-1;renderCanvas();renderInspector()}
+function syncImageControls(){let im=p().image||={mode:"cover",x:0,y:0,zoom:1};if($("mode"))$("mode").value=im.mode;if($("zoom"))$("zoom").value=im.zoom;if($("ix"))$("ix").value=im.x;if($("iy"))$("iy").value=im.y}
+function imageProp(){let im=p().image||={};im.mode=$("mode").value;im.zoom=+$("zoom").value;im.x=+$("ix").value;im.y=+$("iy").value;p().image=im;renderCanvas()}
+function toggleImageEdit(){imgEdit=!imgEdit;$("imageEdit").textContent="BILDPOSITION: "+(imgEdit?"EIN":"AUS")}
+$("canvas")?.addEventListener("mousedown",ev=>{if(!imgEdit)return;let im=p().image||={x:0,y:0},sx=ev.clientX,sy=ev.clientY,ox=im.x||0,oy=im.y||0;function mv(a){im.x=Math.round(ox+(a.clientX-sx)/scale);im.y=Math.round(oy+(a.clientY-sy)/scale);p().image=im;syncImageControls();renderCanvas()}function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up)}addEventListener("mousemove",mv);addEventListener("mouseup",up)})
+async function uploadImage(){let f=$("file").files[0];if(!f)return;let fd=new FormData();fd.append("image",f);let r=await fetch("/api/images",{method:"POST",body:fd}),j=await r.json();if(!r.ok){setStatus(j.error||"Upload fehlgeschlagen");return}p().background=j.file;await save();await renderImages();renderCanvas()}
+async function renderImages(){let x=$("images")||$("imagelist");if(!x)return;let a=await jget("/api/images");x.innerHTML=a.map(v=>`<div class="sensoritem"><b>${v.name}</b><br>${v.width} × ${v.height}<br><button class="btn use" data-n="${v.name}">NUTZEN</button><button class="btn remove">VOM PANEL</button></div>`).join("");x.querySelectorAll(".use").forEach(b=>b.onclick=async()=>{p().background=b.dataset.n;await save();renderCanvas()});x.querySelectorAll(".remove").forEach(b=>b.onclick=async()=>{p().background="";await save();renderCanvas()})}
+async function save(){await fetch("/api/layout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(L)});setStatus("Gespeichert.")}function setStatus(s){if($("status"))$("status").textContent=s}
+init();setInterval(async()=>{try{V=await jget("/api/values");pushHistory();renderCanvas()}catch(e){}},5000);
 </script></body></html>"""
 
 @app.get("/")

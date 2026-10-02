@@ -94,3 +94,7 @@ RUN grep -q 'function renderInspector' /app/webui_v07.py && grep -q 'function sp
 COPY lcd_generator.py /app/lcd_generator.py
 RUN python3 -m py_compile /app/lcd_generator.py /app/webui_v07.py
 RUN grep -q '/api/lcd/generate' /app/webui_v07.py && grep -q 'mode.*3' /app/lcd_generator.py
+
+# v0.7.7 UI cleanup gate
+RUN python3 -m py_compile /app/webui_v07.py
+RUN grep -q 'v0.7.7 UI cleanup' /app/webui_v07.py && grep -q 'LCD-VORSCHAU ERZEUGEN' /app/webui_v07.py

@@ -229,6 +229,66 @@ function v076wire(){
 const _oldPush=pushHistory;pushHistory=function(){_oldPush();const h=document.getElementById("histInfo");if(h){let n=(HIST["cpu_usage_percent"]||[]).length;h.textContent="VERLAUF: "+n+"/60 Messpunkte · ca. "+Math.round(n*5/60)+" Min.";}}
 setTimeout(v076wire,0);
 
+/* v0.7.7 UI cleanup */
+(function(){
+  let imageEditMode=false;
+  function btnByText(rx){return Array.from(document.querySelectorAll("button")).find(b=>rx.test((b.textContent||"").trim()));}
+  function setImageMode(on){
+    imageEditMode=!!on;
+    window.imgEdit=imageEditMode;
+    const b=document.getElementById("imageEdit")||btnByText(/^BILDPOSITION:/i);
+    if(b){
+      b.textContent="BILDPOSITION: "+(imageEditMode?"EIN":"AUS");
+      b.classList.toggle("active",imageEditMode);
+      b.style.background=imageEditMode?"#F29A49":"";
+      b.style.color=imageEditMode?"#111":"";
+    }
+  }
+  function cleanupLCD(){
+    const old=btnByText(/LCD-KANDIDAT ERZEUGEN/i);
+    if(old) old.remove();
+    const prev=document.getElementById("lcdPreview");
+    const act=document.getElementById("lcdActivate");
+    if(prev) prev.textContent="LCD-VORSCHAU ERZEUGEN";
+    if(act) act.textContent="AUF LCD AKTIVIEREN";
+  }
+  function cleanupImages(){
+    const box=document.getElementById("images")||document.getElementById("imagelist");
+    if(!box)return;
+    box.style.maxHeight="34vh";box.style.overflowY="auto";box.style.paddingRight="4px";
+    box.querySelectorAll(".sensoritem").forEach(x=>{x.style.padding="6px";x.style.marginBottom="4px"});
+  }
+  function wireImageToggle(){
+    const b=document.getElementById("imageEdit")||btnByText(/^BILDPOSITION:/i);
+    if(!b)return;
+    const clone=b.cloneNode(true);b.replaceWith(clone);
+    clone.id="imageEdit";
+    clone.onclick=()=>setImageMode(!imageEditMode);
+    setImageMode(false);
+  }
+  function wireRemove(){
+    const b=document.getElementById("removeImage")||btnByText(/BILD LÖSCHEN/i);
+    if(!b)return;
+    const clone=b.cloneNode(true);b.replaceWith(clone);
+    clone.id="removeImage";
+    clone.onclick=async()=>{if(window.p){p().background="";await save();renderCanvas();setStatus("Bild vom Panel entfernt.");}};
+  }
+  function pinRightColumn(){
+    const lcd=btnByText(/LCD-VORSCHAU ERZEUGEN/i);
+    if(!lcd)return;
+    const pane=lcd.closest(".pane");
+    if(pane){pane.style.position="sticky";pane.style.bottom="8px";pane.style.zIndex="5";pane.style.background="#0D1016";}
+  }
+  function apply(){
+    cleanupLCD();cleanupImages();wireImageToggle();wireRemove();pinRightColumn();
+  }
+  window.v077RefreshUI=apply;
+  setTimeout(apply,50);
+  const oldRenderImages=window.renderImages;
+  if(typeof oldRenderImages==="function"){
+    window.renderImages=async function(){const r=await oldRenderImages.apply(this,arguments);setTimeout(cleanupImages,0);return r;};
+  }
+})();
 </script></body></html>"""
 
 @app.get("/")

@@ -14,7 +14,7 @@ COPY app/webui.py app/history.py /app/
 COPY app/templates /app/templates
 COPY app/static /app/static
 RUN chmod +x /app/start.sh && python3 -m py_compile /app/webui.py /app/history.py /app/truenas-sensors.py /app/lcd_generator.py && bash -n /app/start.sh
-RUN asterctl --help 2>&1 | grep -q -- '--config' && aster-sysinfo --help 2>&1 | grep -q -- '--out'
+RUN asterctl --help 2>&1 | grep -q -- '--config' && asterctl --help 2>&1 | grep -q -- '--sensor-path' && aster-sysinfo --help 2>&1 | grep -q -- '--out'
 WORKDIR /app
 EXPOSE 8765
 CMD ["/app/start.sh"]

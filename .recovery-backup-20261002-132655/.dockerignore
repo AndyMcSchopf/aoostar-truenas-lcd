@@ -1,0 +1,9 @@
+.git
+.github
+*.zip
+*.log
+.env
+README.md
+setup-project.ps1
+truenas-app.yaml
+compose.dev.yaml

@@ -89,3 +89,8 @@ RUN grep -q 'async function init' /app/webui_v07.py && grep -q 'uploadImage' /ap
 # v0.7.5 editor gate
 RUN python3 -m py_compile /app/webui_v07.py
 RUN grep -q 'function renderInspector' /app/webui_v07.py && grep -q 'function sparkHTML' /app/webui_v07.py && grep -q 'function imageProp' /app/webui_v07.py && grep -q 'function dragElement' /app/webui_v07.py
+
+# v0.7.6 LCD generator
+COPY lcd_generator.py /app/lcd_generator.py
+RUN python3 -m py_compile /app/lcd_generator.py /app/webui_v07.py
+RUN grep -q '/api/lcd/generate' /app/webui_v07.py && grep -q 'mode.*3' /app/lcd_generator.py

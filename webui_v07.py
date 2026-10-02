@@ -213,6 +213,22 @@ async function uploadImage(){let f=$("file").files[0];if(!f)return;let fd=new Fo
 async function renderImages(){let x=$("images")||$("imagelist");if(!x)return;let a=await jget("/api/images");x.innerHTML=a.map(v=>`<div class="sensoritem"><b>${v.name}</b><br>${v.width} × ${v.height}<br><button class="btn use" data-n="${v.name}">NUTZEN</button><button class="btn remove">VOM PANEL</button></div>`).join("");x.querySelectorAll(".use").forEach(b=>b.onclick=async()=>{p().background=b.dataset.n;await save();renderCanvas()});x.querySelectorAll(".remove").forEach(b=>b.onclick=async()=>{p().background="";await save();renderCanvas()})}
 async function save(){await fetch("/api/layout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(L)});setStatus("Gespeichert.")}function setStatus(s){if($("status"))$("status").textContent=s}
 init();setInterval(async()=>{try{V=await jget("/api/values");pushHistory();renderCanvas()}catch(e){}},5000);
+
+/* v0.7.6 editor fixes */
+function v076wire(){
+ const rm=document.getElementById("removeImage")||Array.from(document.querySelectorAll("button")).find(b=>/BILD LÖSCHEN/i.test(b.textContent));
+ if(rm)rm.onclick=async()=>{p().background="";await save();renderCanvas();setStatus("Bild vom Panel entfernt.");};
+ const ie=document.getElementById("imageEdit");
+ if(ie)ie.onclick=()=>{imgEdit=!imgEdit;ie.textContent="BILDPOSITION: "+(imgEdit?"EIN":"AUS");ie.classList.toggle("active",imgEdit);};
+ ["mode","zoom","ix","iy"].forEach(id=>{const n=document.getElementById(id);if(n)n.onchange=()=>{imageProp();save();};});
+ const stat=document.getElementById("status");
+ if(stat){const b=document.createElement("div");b.innerHTML='<button class="btn" id="lcdPreview">LCD-VORSCHAU ERZEUGEN</button><button class="btn" id="lcdActivate">AUF LCD AKTIVIEREN</button><div id="histInfo" class="muted"></div>';stat.parentNode.appendChild(b);
+ document.getElementById("lcdPreview").onclick=async()=>{await save();let r=await fetch("/api/lcd/generate",{method:"POST"}),j=await r.json();setStatus(j.ok?"LCD-Kandidat erzeugt: "+j.panels+" Panels":j.error);};
+ document.getElementById("lcdActivate").onclick=async()=>{if(!confirm("Bestehende monitor.json sichern und generierte LCD-Konfiguration aktivieren?"))return;let r=await fetch("/api/lcd/activate",{method:"POST"}),j=await r.json();setStatus(j.ok?"monitor.json aktiviert. asterctl beim nächsten Neustart/Reload verwendet sie.":j.error);};}
+}
+const _oldPush=pushHistory;pushHistory=function(){_oldPush();const h=document.getElementById("histInfo");if(h){let n=(HIST["cpu_usage_percent"]||[]).length;h.textContent="VERLAUF: "+n+"/60 Messpunkte · ca. "+Math.round(n*5/60)+" Min.";}}
+setTimeout(v076wire,0);
+
 </script></body></html>"""
 
 @app.get("/")
@@ -267,5 +283,23 @@ def prepare():
     candidate=CFG/"monitor-v07-candidate.json"
     candidate.write_text(json.dumps(load_layout(),ensure_ascii=False,indent=2))
     return jsonify(ok=True,message=f"Backup: {backup or 'nicht vorhanden'} · Kandidat: {candidate.name}. Noch keine automatische Umschaltung.")
+
+@app.post("/api/lcd/generate")
+def lcd_generate():
+    import subprocess, json
+    try:
+        r=subprocess.run(["python3","/app/lcd_generator.py"],capture_output=True,text=True,timeout=20)
+        if r.returncode != 0: return jsonify(ok=False,error=r.stderr or r.stdout),500
+        return jsonify(json.loads(r.stdout.strip().splitlines()[-1]))
+    except Exception as e: return jsonify(ok=False,error=str(e)),500
+
+@app.post("/api/lcd/activate")
+def lcd_activate():
+    import subprocess, json
+    try:
+        r=subprocess.run(["python3","/app/lcd_generator.py","--activate"],capture_output=True,text=True,timeout=20)
+        if r.returncode != 0: return jsonify(ok=False,error=r.stderr or r.stdout),500
+        return jsonify(json.loads(r.stdout.strip().splitlines()[-1]))
+    except Exception as e: return jsonify(ok=False,error=str(e)),500
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=8765)

@@ -11,7 +11,7 @@ export TRUENAS_SENSOR_OUT="$RUNTIME/truenas.txt"
 ( while true; do python3 /app/webui_v07.py; echo "[manager] webui restart" >&2; sleep 3; done ) & WEB_PID=$!
 echo "Web Editor: http://<TRUENAS-IP>:8765"
 sleep 3
-( while true; do if [ ! -r "$CFG/monitor.json" ]; then echo "[manager] monitor.json missing" >&2; sleep 5; continue; fi; asterctl lcd --config "$CFG/monitor.json" --font-dir /app/fonts; echo "[manager] asterctl restart" >&2; sleep 5; done ) & LCD_PID=$!
+( while true; do if [ ! -r "$CFG/monitor.json" ]; then echo "[manager] monitor.json missing" >&2; sleep 5; continue; fi; asterctl --config "$CFG/monitor.json" --config-dir "$CFG" --font-dir /app/fonts --sensor-path "$CFG/sensors" --sensor-mapping "$CFG/sensor-mapping.cfg"; echo "[manager] asterctl restart" >&2; sleep 5; done ) & LCD_PID=$!
 cleanup(){ kill "$SYS_PID" "$TN_PID" "$MERGE_PID" "$WEB_PID" "$LCD_PID" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 wait

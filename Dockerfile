@@ -72,3 +72,12 @@ RUN bash -n /app/start.sh && aster-sysinfo --help 2>&1 | grep -q -- '--out'
 # v0.7.2 runtime storage gate
 RUN bash -n /app/start.sh && python3 -m py_compile /app/truenas-sensors.py /app/webui_v07.py
 RUN aster-sysinfo --help 2>&1 | grep -q -- '--out'
+
+# v0.7.3 asterctl 0.2.x CLI compatibility gate
+RUN bash -n /app/start.sh \
+    && asterctl --help 2>&1 | grep -q -- '--config' \
+    && asterctl --help 2>&1 | grep -q -- '--config-dir' \
+    && asterctl --help 2>&1 | grep -q -- '--font-dir' \
+    && asterctl --help 2>&1 | grep -q -- '--sensor-path' \
+    && asterctl --help 2>&1 | grep -q -- '--sensor-mapping' \
+    && ! grep -Eq 'asterctl[[:space:]]+lcd' /app/start.sh

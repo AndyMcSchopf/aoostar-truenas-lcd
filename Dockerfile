@@ -68,3 +68,7 @@ RUN sed -i 's/\r$//' /app/start.sh && chmod +x /app/start.sh && bash -n /app/sta
 
 # v0.7.1 aster-sysinfo CLI gate
 RUN bash -n /app/start.sh && aster-sysinfo --help 2>&1 | grep -q -- '--out'
+
+# v0.7.2 runtime storage gate
+RUN bash -n /app/start.sh && python3 -m py_compile /app/truenas-sensors.py /app/webui_v07.py
+RUN aster-sysinfo --help 2>&1 | grep -q -- '--out'

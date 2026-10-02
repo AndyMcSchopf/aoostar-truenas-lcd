@@ -1,9 +1,9 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 import json, os, socket, ssl, time
 from pathlib import Path
 from websocket import create_connection
 
-OUT = Path('/app/cfg/sensors/truenas.txt')
+OUT = Path(os.environ.get('TRUENAS_SENSOR_OUT', '/app/cfg/sensors/truenas.txt'))
 INTERVAL = max(1, int(os.getenv('REFRESH_SECONDS', '5')))
 HOST = os.getenv('TRUENAS_HOST', '127.0.0.1')
 WS_URL = os.getenv('TRUENAS_WS_URL', f'wss://{HOST}/api/current')

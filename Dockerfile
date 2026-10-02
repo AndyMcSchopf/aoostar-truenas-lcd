@@ -81,3 +81,7 @@ RUN bash -n /app/start.sh \
     && asterctl --help 2>&1 | grep -q -- '--sensor-path' \
     && asterctl --help 2>&1 | grep -q -- '--sensor-mapping' \
     && ! grep -Eq 'asterctl[[:space:]]+lcd' /app/start.sh
+
+# v0.7.4 webui gate
+RUN python3 -m py_compile /app/webui_v07.py
+RUN grep -q 'async function init' /app/webui_v07.py && grep -q 'uploadImage' /app/webui_v07.py

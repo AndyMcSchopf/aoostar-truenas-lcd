@@ -111,34 +111,53 @@ main{display:grid;grid-template-columns:280px minmax(600px,1fr) 285px;gap:12px;p
 <div><div class="pane"><div class="row"><input id="pname" onchange="panelProp()"><input id="pdur" type="number" min="1" onchange="panelProp()"><select id="theme" onchange="themeProp()"></select></div><div class="viewport" id="vp"><div class="canvas" id="canvas"></div></div><div class="tools"><button class="btn" onclick="save()">SPEICHERN</button><button class="btn" onclick="file.click()">BILD HOCHLADEN</button><input id="file" type="file" accept="image/*" hidden onchange="upload()"><button class="btn" id="imgedit" onclick="toggleImageEdit()">BILDPOSITION: AUS</button><button class="btn" onclick="removeImage()">BILD LÖSCHEN</button></div><div class="row"><select id="mode" onchange="imageProp()"><option value="contain">EINPASSEN</option><option value="cover">AUSFÜLLEN</option><option value="center">ORIGINAL</option></select><input id="zoom" type="number" min=".25" max="4" step=".05" onchange="imageProp()"><input id="ix" type="number" onchange="imageProp()"><input id="iy" type="number" onchange="imageProp()"></div></div></div>
 <div><div class="pane"><b>EIGENSCHAFTEN</b><div id="props" class="muted">Element auswählen.</div></div><div class="pane"><b>BILDER</b><div id="imagelist"></div></div><div class="pane"><b>LCD</b><button class="btn" onclick="prepare()">LCD-KANDIDAT ERZEUGEN</button><div id="status" class="muted"></div></div></div>
 </main><script>
-let L={},V={},S=[],T={},pi=0,ei=-1,imgEdit=false,scale=1;
-const A={orange:'#F29A49',amber:'#F6B85A',violet:'#8E7CC3',blue:'#6699CC',pink:'#C96B9A'};
-async function init(){L=await(await fetch('/api/layout')).json();V=await(await fetch('/api/values')).json();S=await(await fetch('/api/sensors')).json();T=await(await fetch('/api/themes')).json();theme.innerHTML=Object.entries(T).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');render();loadImages();addEventListener('resize',fit)}
-function fit(){scale=Math.min(1,vp.clientWidth/960);canvas.style.transform=`scale(${scale})`;vp.style.height=(376*scale)+'px'}function p(){return L.panels[pi]}function e(){return p().elements[ei]}function col(z){let th=T[L.theme]||T['lcars-orange'];return th[z.accent]||th.orange}
-function render(){renderPanels();renderCanvas();renderSensors();theme.value=L.theme;fit()}
-function renderPanels(){panels.innerHTML=L.panels.map((x,i)=>`<button class="btn ${i==pi?'active':''}" onclick="pi=${i};ei=-1;render()">${i+1} ${x.name}</button>`).join('');pname.value=p().name;pdur.value=p().duration;let im=p().image||={mode:'cover',x:0,y:0,zoom:1};mode.value=im.mode;zoom.value=im.zoom;ix.value=im.x;iy.value=im.y}
-function renderCanvas(){let x=p(),im=x.image||{},th=T[L.theme]||T['lcars-orange'];canvas.style.background=th.bg;canvas.style.backgroundImage=x.background?`url('/user-images/${x.background}')`:'none';canvas.style.backgroundRepeat='no-repeat';canvas.style.backgroundPosition=`${im.x||0}px ${im.y||0}px`;canvas.style.backgroundSize=im.mode==='contain'?'contain':im.mode==='cover'?`${(im.zoom||1)*100}% auto`:'auto';canvas.innerHTML=x.elements.map((z,i)=>html(z,i,th)).join('');propsUI()}
-function html(z,i,th){let c=`el ${i==ei?'sel':''}`,common=`class="${c}" onmousedown="drag(event,${i})" onclick="sel(event,${i})"`,ac=col(z);
-if(z.type==='lcars_header'||z.type==='lcars_footer')return `<div ${common} class="${c} ${z.type==='lcars_header'?'lcars-header':'lcars-footer'}" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px;background:${ac}">${z.text}</div>`;
-if(z.type==='lcars_elbow')return `<div ${common} class="${c} lcars-elbow" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px;background:${ac}">${z.text}</div>`;
-if(z.type==='lcars_card')return `<div ${common} class="${c} lcars-card" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px"><div class=cap style="background:${ac}">${z.text}</div></div>`;
-if(z.type==='pool'){let n=z.index,k='truenas_pool_'+n+'_',pct=parseFloat(V[k+'used_percent']||0);return `<div ${common} class="${c} pool" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px"><div class=head style="background:${ac}">${V[k+'name']||'POOL '+(n+1)} · ${V[k+'status']||''}</div><div class=body><span class=pct>${V[k+'used_percent']||'–'} %</span> <span class=small>${V[k+'used']||''} / ${V[k+'size']||''}</span><div class=bar style="height:11px;margin-top:10px"><div style="height:100%;width:${pct}%;background:${ac}"></div></div></div></div>`;
-if(z.type==='bar'){let n=parseFloat(V[z.label]||0),pct=Math.max(0,Math.min(100,n/(z.max||100)*100));return `<div ${common} class="${c} bar" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px"><div style="height:100%;width:${pct}%;background:${ac}"></div></div>`}
-if(z.type==='badge')return `<div ${common} class="${c} badge" style="left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px">${V[z.label]??'–'}</div>`;
-if(z.type==='text')return `<div ${common} style="left:${z.x}px;top:${z.y}px;font-size:${z.size}px;color:${th.text}">${z.text}</div>`;
-return `<div ${common} style="left:${z.x}px;top:${z.y}px;font-size:${z.size}px;color:${th.text}"><span class=sensor-label>${z.title||''}</span>${V[z.label]??'–'} ${z.unit||''}</div>`}
-function sel(ev,i){ev.stopPropagation();ei=i;renderCanvas()}function drag(ev,i){if(imgEdit)return;ei=i;let z=e(),sx=ev.clientX,sy=ev.clientY,ox=z.x,oy=z.y;function mv(a){z.x=Math.round(Math.max(0,Math.min(959,ox+(a.clientX-sx)/scale)));z.y=Math.round(Math.max(0,Math.min(375,oy+(a.clientY-sy)/scale)));renderCanvas()}function up(){removeEventListener('mousemove',mv);removeEventListener('mouseup',up)}addEventListener('mousemove',mv);addEventListener('mouseup',up)}
-canvas.addEventListener('mousedown',ev=>{if(!imgEdit)return;let im=p().image,sx=ev.clientX,sy=ev.clientY,ox=im.x||0,oy=im.y||0;function mv(a){im.x=Math.round(ox+(a.clientX-sx)/scale);im.y=Math.round(oy+(a.clientY-sy)/scale);ix.value=im.x;iy.value=im.y;renderCanvas()}function up(){removeEventListener('mousemove',mv);removeEventListener('mouseup',up)}addEventListener('mousemove',mv);addEventListener('mouseup',up)})
-function propsUI(){if(ei<0){props.innerHTML='Element auswählen.';return}let z=e();props.innerHTML=`<label>Typ<input value="${z.type}" disabled></label><label>Titel/Text<input id=pt value="${z.title??z.text??''}" onchange=prop()></label><div class=row><input id=px type=number value="${z.x}" onchange=prop()><input id=py type=number value="${z.y}" onchange=prop()></div><label>Akzent<select id=pa onchange=prop()><option>orange</option><option>amber</option><option>violet</option><option>blue</option><option>pink</option></select></label><button class=btn onclick=dup()>DUPLIZIEREN</button><button class=btn onclick=delEl()>LÖSCHEN</button>`;if(z.accent)pa.value=z.accent}
-function prop(){let z=e();if(z.type==='text'||z.type.startsWith('lcars_'))z.text=pt.value;else z.title=pt.value;z.x=+px.value;z.y=+py.value;z.accent=pa.value;renderCanvas()}function dup(){let z=JSON.parse(JSON.stringify(e()));z.x+=12;z.y+=12;p().elements.push(z);ei=p().elements.length-1;renderCanvas()}function delEl(){p().elements.splice(ei,1);ei=-1;renderCanvas()}
-function add(o){p().elements.push(o);ei=p().elements.length-1;renderCanvas()}function addText(){add({type:'text',text:'TEXT',x:80,y:80,size:24})}function addCard(){add({type:'lcars_card',text:'GRUPPE',x:80,y:80,w:300,h:150,accent:'orange'})}function addBadge(){add({type:'badge',label:'truenas_system_status',x:80,y:80,w:110,h:32})}function addBar(){add({type:'bar',label:'cpu_usage_percent',x:80,y:80,w:260,h:14,max:100,accent:'orange'})}function addSensor(id,n){add({type:'sensor',label:id,title:n,x:80,y:80,size:24,unit:''})}
-function renderSensors(){let t=(q.value||'').toLowerCase();sensors.innerHTML=S.filter(x=>(x.name+' '+x.id).toLowerCase().includes(t)).map(x=>`<div class=sensoritem onclick='addSensor(${JSON.stringify(x.id)},${JSON.stringify(x.name)})'><b>${x.name}</b><br><span class=muted>${x.value}</span></div>`).join('')}
-function panelProp(){p().name=pname.value;p().duration=+pdur.value;renderPanels()}function themeProp(){L.theme=theme.value;renderCanvas()}function addPanel(){L.panels.push({name:'NEUES PANEL',duration:6,background:'',image:{mode:'cover',x:0,y:0,zoom:1},elements:[]});pi=L.panels.length-1;ei=-1;render()}
-function imageProp(){let im=p().image;im.mode=mode.value;im.zoom=+zoom.value;im.x=+ix.value;im.y=+iy.value;renderCanvas()}function toggleImageEdit(){imgEdit=!imgEdit;imgedit.textContent='BILDPOSITION: '+(imgEdit?'EIN':'AUS');imgedit.classList.toggle('active',imgEdit)}
-async function upload(){let f=file.files[0];if(!f)return;let fd=new FormData();fd.append('image',f);let j=await(await fetch('/api/images',{method:'POST',body:fd})).json();if(j.ok){p().background=j.file;await save();renderCanvas();loadImages()}else alert(j.error)}
-async function removeImage(){p().background='';await save();renderCanvas()}async function loadImages(){let a=await(await fetch('/api/images')).json();imagelist.innerHTML=a.map(x=>`<div class=sensoritem><b>${x.name}</b><br>${x.width}×${x.height} <button class=btn onclick="useImage('${x.name}')">NUTZEN</button> <button class=btn onclick="deleteImage('${x.name}')">LÖSCHEN</button></div>`).join('')}function useImage(n){p().background=n;save();renderCanvas()}async function deleteImage(n){await fetch('/api/images/'+encodeURIComponent(n),{method:'DELETE'});if(p().background===n)p().background='';await save();loadImages();renderCanvas()}
-async function save(){await fetch('/api/layout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(L)});status.textContent='GESPEICHERT'}async function prepare(){await save();let j=await(await fetch('/api/prepare',{method:'POST'})).json();status.textContent=j.message||j.error}
-init();setInterval(async()=>{V=await(await fetch('/api/values')).json();renderCanvas()},5000)
+"use strict";
+let L=null,V={},S=[],T={},pi=0;
+const el=id=>document.getElementById(id);
+async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(u+" HTTP "+r.status);return await r.json();}
+async function init(){
+ try{
+  L=await jget("/api/layout"); V=await jget("/api/values"); S=await jget("/api/sensors"); T=await jget("/api/themes");
+  renderPanels(); renderSensors(); renderCanvas(); await renderImages();
+  const q=el("q"); if(q)q.addEventListener("input",renderSensors);
+  const f=el("file"); if(f)f.addEventListener("change",uploadImage);
+  const ub=el("uploadBtn"); if(ub&&f)ub.addEventListener("click",()=>f.click());
+ }catch(e){console.error(e);const s=el("status");if(s)s.textContent="Initialisierung fehlgeschlagen: "+e;}
+}
+function renderPanels(){
+ const x=el("panels"); if(!x||!L||!L.panels)return;
+ x.innerHTML=L.panels.map((p,i)=>'<button class="btn '+(i===pi?'active':'')+'" data-i="'+i+'">'+(i+1)+' '+p.name+'</button>').join("");
+ x.querySelectorAll("button").forEach(b=>b.onclick=()=>{pi=Number(b.dataset.i);renderPanels();renderCanvas();});
+}
+function renderSensors(){
+ const x=el("sensors");if(!x)return;const q=((el("q")||{}).value||"").toLowerCase();
+ x.innerHTML=S.filter(s=>(s.name+" "+s.id).toLowerCase().includes(q)).map(s=>'<div class="sensoritem"><b>'+s.name+'</b><br><span class="muted">'+s.value+'</span></div>').join("");
+}
+function renderCanvas(){
+ const c=el("canvas");if(!c||!L||!L.panels)return;
+ const p=L.panels[pi],th=T[L.theme]||T["lcars-orange"]||{bg:"#050608",orange:"#F29A49",text:"#F5EEE6",panel:"#111319"};
+ c.style.backgroundColor=th.bg;c.style.backgroundImage=p.background?'url("/user-images/'+encodeURIComponent(p.background)+'")':"none";c.style.backgroundRepeat="no-repeat";c.style.backgroundSize="cover";
+ let h='<div style="position:absolute;left:18px;top:14px;width:924px;height:42px;border-radius:22px;background:'+th.orange+';color:#111;font-weight:bold;padding:12px 20px">'+p.name.toUpperCase()+'</div>';
+ if(pi===0)h+=block("CPU","cpu_usage_percent",70,100,th)+block("CPU TEMP","temperature_cpu",330,100,th)+block("RAM","mem_usage_percent",590,100,th)+block("DOWNLOAD","truenas_net_down",70,245,th)+block("UPLOAD","truenas_net_up",590,245,th);
+ if(pi===1)for(let i=0;i<4;i++)h+=pool(i,i%2?492:18,i<2?80:220,th);
+ if(pi===2)h+=block("APPS AKTIV","truenas_apps_running",70,110,th)+block("UPDATES","truenas_apps_updates",350,110,th)+block("POOLS","truenas_pools_healthy_de",70,245,th)+block("VERSION","truenas_version",590,245,th);
+ c.innerHTML=h;
+}
+function block(n,k,x,y,th){return '<div style="position:absolute;left:'+x+'px;top:'+y+'px;color:'+th.text+';font-size:30px"><span style="display:block;font-size:14px;color:#AFA7A0">'+n+'</span>'+(V[k]??"–")+'</div>';}
+function pool(i,x,y,th){const k="truenas_pool_"+i+"_";return '<div style="position:absolute;left:'+x+'px;top:'+y+'px;width:450px;height:125px;background:'+th.panel+';border-radius:22px;overflow:hidden"><div style="height:30px;background:'+th.orange+';color:#111;padding:6px 15px;font-weight:bold">'+(V[k+"name"]??("POOL "+(i+1)))+'</div><div style="padding:15px 18px;font-size:28px">'+(V[k+"used_percent"]??"–")+' %</div></div>';}
+async function renderImages(){
+ const x=el("images")||el("imagelist");if(!x)return;const a=await jget("/api/images");
+ x.innerHTML=a.map(v=>'<div class="sensoritem"><b>'+v.name+'</b><br>'+v.width+' × '+v.height+' <button class="btn use" data-name="'+v.name+'">NUTZEN</button></div>').join("");
+ x.querySelectorAll(".use").forEach(b=>b.onclick=async()=>{L.panels[pi].background=b.dataset.name;await save();renderCanvas();});
+}
+async function uploadImage(){
+ const f=el("file").files[0];if(!f)return;const fd=new FormData();fd.append("image",f);
+ const r=await fetch("/api/images",{method:"POST",body:fd});const v=await r.json();
+ if(!r.ok){console.error(v);return;}L.panels[pi].background=v.file;await save();await renderImages();renderCanvas();
+}
+async function save(){await fetch("/api/layout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(L)});}
+init();
+setInterval(async()=>{try{V=await jget("/api/values");renderCanvas();}catch(e){}},5000);
 </script></body></html>"""
 
 @app.get("/")

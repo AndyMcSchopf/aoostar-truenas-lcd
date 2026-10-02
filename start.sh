@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-echo "=== AOOSTAR TrueNAS LCD Manager v0.7.8.3 ==="
+VER=$(cat /app/VERSION 2>/dev/null || echo unknown)`necho "=== AOOSTAR TrueNAS LCD Manager v$VER ==="
 RUNTIME=/run/aoostar; CFG=/app/cfg
 mkdir -p "$RUNTIME" "$CFG/sensors" "$CFG/images" "$CFG/backups"
 ( while true; do aster-sysinfo --refresh 5 --out "$RUNTIME/hardware.txt"; sleep 5; done ) & SYS_PID=$!

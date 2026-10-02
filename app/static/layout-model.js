@@ -1,0 +1,5 @@
+"use strict";
+window.AOOSTAR_LAYOUT={version:3,W:960,H:376,
+imageRect(iw,ih,mode,zoom,x,y){let b=mode==="cover"?Math.max(960/iw,376/ih):mode==="contain"?Math.min(960/iw,376/ih):1,s=b*(Number(zoom)||1),w=iw*s,h=ih*s;return{w,h,left:(960-w)/2+(Number(x)||0),top:(376-h)/2+(Number(y)||0)}},
+migrate(L){L.schemaVersion=3;for(const p of (L.panels||[])){p.image=Object.assign({mode:"cover",x:0,y:0,zoom:1},p.image||{});p.elements=p.elements||[];for(const e of p.elements){if(e.type==="lcars_card")e.type="card";if(e.type==="lcars_header"||e.type==="lcars_footer")e.type="header";}}
+let p=(L.panels||[]).find(x=>/system/i.test(x.name||""));if(p){let add=(k,x,y,w,h,a,m)=>{if(!p.elements.some(e=>e.type==="sparkline"&&e.label===k))p.elements.push({type:"sparkline",label:k,x,y,w,h,accent:a,max:m})};add("cpu_usage_percent",50,205,225,70,"orange",100);add("mem_usage_percent",360,205,225,70,"violet",100);add("truenas_net_down_bytes_sec",675,215,230,65,"blue",null)}return L;}};

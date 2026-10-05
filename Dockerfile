@@ -6,7 +6,7 @@ WORKDIR /build/aoostar-rs
 RUN cargo build --release
 
 FROM python:3.12-slim-bookworm
-ARG APP_VERSION=0.7.9.1
+ARG APP_VERSION=0.7.10
 ARG VCS_REF=unknown
 ENV AOOSTAR_VERSION=${APP_VERSION}
 ENV AOOSTAR_BUILD=${VCS_REF}

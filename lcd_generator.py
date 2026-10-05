@@ -33,7 +33,8 @@ def panel(p,i,v,h):
   elif q=="sparkline":spark(im,(x,y,w,hh),h.get(e.get("label"),[]),a,e.get("max"))
   elif q=="text":d.text((x,y),e.get("text",""),font=font(e.get("size",24)),fill=rgb(T["text"]))
  fn=f"panel_{i+1}.png";im.convert("RGB").save(G/fn);return fn
-def build():`n clean_generated(CFG)
+def build():
+ clean_generated(CFG)
  L=json.loads((C/"layout-v07.json").read_text());v=readvals();h=hist();d=[]
  for i,p in enumerate(L.get("panels",[])):
   fn=panel(p,i,v,h);ss=[sen(e) for e in p.get("elements",[]) if e.get("type")=="sensor"]

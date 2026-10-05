@@ -2,7 +2,7 @@
 from flask import Flask,jsonify,request,send_from_directory,render_template
 from pathlib import Path
 from PIL import Image
-import json,os,re,subprocess,shutil,time,time
+import json,os,re,subprocess,shutil,time,hashlib,time
 CFG=Path(os.environ.get("AOOSTAR_CFG","/app/cfg")); IMG=CFG/"images"; IMG.mkdir(parents=True,exist_ok=True)
 PREVIEW=CFG/"lcd-preview"; PREVIEW.mkdir(parents=True,exist_ok=True)
 LAYOUT=CFG/"layout-v07.json"; VALUES=CFG/"sensors"/"values.txt"; HISTORY=CFG/"history.json"
@@ -65,32 +65,46 @@ def lcd_preview_file(name): return send_from_directory(PREVIEW,Path(name).name)
 @app.get("/api/lcd/preview")
 def lcd_preview_list(): return jsonify(images=preview_images())
 
-def _collect_preview_pngs():
- # Upstream --save currently writes into ./out; also tolerate nested output.
- out=PREVIEW/"out"
- if out.exists():
-  for f in list(out.glob("*.png")):
-   dst=PREVIEW/f.name
-   if dst.exists():dst.unlink()
-   f.replace(dst)
- for f in list(PREVIEW.rglob("*.png")):
-  if f.parent!=PREVIEW:
-   dst=PREVIEW/f.name
-   if not dst.exists():f.replace(dst)
- return preview_images()
+def _png_hash(p):
+ try:return hashlib.sha256(p.read_bytes()).hexdigest()
+ except:return ""
+
+def _snapshot_pngs(seen,captures,events):
+ # Capture every new/changed PNG immediately, before asterctl can overwrite it.
+ now=time.monotonic()
+ candidates=[p for p in PREVIEW.rglob("*.png") if "capture-" not in p.name]
+ for p in candidates:
+  try:
+   st=p.stat();sig=(st.st_size,st.st_mtime_ns,_png_hash(p))
+  except FileNotFoundError:continue
+  key=str(p)
+  if seen.get(key)==sig:continue
+  seen[key]=sig
+  dst=PREVIEW/f"capture-{len(captures)+1:02d}.png"
+  shutil.copy2(p,dst)
+  captures.append(dst)
+  events.append({"t":round(now,3),"source":str(p.relative_to(PREVIEW)),"capture":dst.name,
+                 "bytes":st.st_size,"mtime_ns":st.st_mtime_ns,"sha256":sig[2]})
+ return captures
 
 def _asterctl_preview(expected_panels):
  cmd=["asterctl","--simulate","--save","--config",str(CFG/"monitor.generated.json"),
       "--config-dir",str(CFG),"--font-dir","/app/fonts","--sensor-path",str(CFG/"sensors"),
       "--sensor-mapping",str(CFG/"sensor-mapping.cfg")]
  p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,cwd=str(PREVIEW))
- deadline=time.monotonic()+12.0
- images=[]
+ deadline=time.monotonic()+max(16.0,expected_panels*5.0)
+ seen={};captures=[];events=[]
  try:
   while time.monotonic()<deadline:
-   time.sleep(.25)
-   images=_collect_preview_pngs()
-   if len(images)>=expected_panels:break
+   time.sleep(.15)
+   _snapshot_pngs(seen,captures,events)
+   # We may capture intermediate frames, so stop only after at least expected distinct hashes.
+   distinct=[]
+   hashes=set()
+   for c in captures:
+    h=_png_hash(c)
+    if h and h not in hashes:hashes.add(h);distinct.append(c)
+   if len(distinct)>=expected_panels:break
    if p.poll() is not None:break
  finally:
   if p.poll() is None:
@@ -99,8 +113,20 @@ def _asterctl_preview(expected_panels):
    except subprocess.TimeoutExpired:
     p.kill();p.wait(timeout=2)
  stdout,stderr=p.communicate()
- images=_collect_preview_pngs()
- return p.returncode,images,(stdout or "")[-4000:],(stderr or "")[-4000:]
+ _snapshot_pngs(seen,captures,events)
+ # Deduplicate exact frames while preserving first-seen order.
+ unique=[];hashes=set()
+ for c in captures:
+  h=_png_hash(c)
+  if h and h not in hashes:
+   hashes.add(h);unique.append(c)
+ # Normalize names used by the web overlay.
+ for old in list(PREVIEW.glob("preview-*.png")):old.unlink(missing_ok=True)
+ images=[]
+ for i,c in enumerate(unique,1):
+  dst=PREVIEW/f"preview-{i:02d}.png";shutil.copy2(c,dst)
+  images.append({"name":dst.name,"url":"/lcd-preview/"+dst.name+"?v="+str(dst.stat().st_mtime_ns)})
+ return p.returncode,images,(stdout or "")[-8000:],(stderr or "")[-8000:],events
 
 @app.post("/api/lcd/generate")
 def generate():
@@ -115,13 +141,15 @@ def generate():
    expected=len(cfg.get("diy",[]))
   except Exception:
    expected=int(base.get("panels",1) or 1)
-  rc,images,out,err=_asterctl_preview(max(1,expected))
+  rc,images,out,err,events=_asterctl_preview(max(1,expected))
   base["asterctlPreviewLog"]=(out+"\n"+err)[-4000:]
   base["expectedPanels"]=expected
+  base["previewCaptureEvents"]=events
   if images:
    base["previewMode"]="asterctl-simulate"
    base["previewImages"]=images
    base["previewComplete"]=len(images)>=expected
+   base["capturedFrames"]=len(images)
    if len(images)<expected:base["previewWarning"]=f"asterctl erzeugte nur {len(images)} von {expected} erwarteten Preview-Panels."
    return jsonify(base)
   # Explicit fallback, never pretend it is the real LCD render.

@@ -2,7 +2,7 @@
 from flask import Flask,jsonify,request,send_from_directory,render_template
 from pathlib import Path
 from PIL import Image
-import json,os,re,subprocess,shutil,time
+import json,os,re,subprocess,shutil,time,time
 CFG=Path(os.environ.get("AOOSTAR_CFG","/app/cfg")); IMG=CFG/"images"; IMG.mkdir(parents=True,exist_ok=True)
 PREVIEW=CFG/"lcd-preview"; PREVIEW.mkdir(parents=True,exist_ok=True)
 LAYOUT=CFG/"layout-v07.json"; VALUES=CFG/"sensors"/"values.txt"; HISTORY=CFG/"history.json"
@@ -65,27 +65,78 @@ def lcd_preview_file(name): return send_from_directory(PREVIEW,Path(name).name)
 @app.get("/api/lcd/preview")
 def lcd_preview_list(): return jsonify(images=preview_images())
 
-@app.post("/api/lcd/generate")
-def generate():
- r=subprocess.run(["python3","/app/lcd_generator.py"],capture_output=True,text=True,timeout=30)
- if r.returncode!=0:return jsonify(ok=False,error=r.stderr),500
- base=json.loads(r.stdout.strip().splitlines()[-1])
- for f in PREVIEW.glob("*"):
-  if f.is_file():f.unlink(missing_ok=True)
- cmd=["asterctl","--simulate","--save","--config",str(CFG/"monitor.generated.json"),"--config-dir",str(CFG),"--font-dir","/app/fonts","--sensor-path",str(CFG/"sensors"),"--sensor-mapping",str(CFG/"sensor-mapping.cfg")]
- sim=subprocess.run(cmd,capture_output=True,text=True,timeout=30,cwd=str(PREVIEW))
+def _collect_preview_pngs():
+ # Upstream --save currently writes into ./out; also tolerate nested output.
  out=PREVIEW/"out"
  if out.exists():
-  for f in out.glob("*.png"):f.replace(PREVIEW/f.name)
-  try:out.rmdir()
-  except OSError:pass
- images=preview_images()
- if images:base["previewMode"]="asterctl-simulate"
- else:
+  for f in list(out.glob("*.png")):
+   dst=PREVIEW/f.name
+   if dst.exists():dst.unlink()
+   f.replace(dst)
+ for f in list(PREVIEW.rglob("*.png")):
+  if f.parent!=PREVIEW:
+   dst=PREVIEW/f.name
+   if not dst.exists():f.replace(dst)
+ return preview_images()
+
+def _asterctl_preview(expected_panels):
+ cmd=["asterctl","--simulate","--save","--config",str(CFG/"monitor.generated.json"),
+      "--config-dir",str(CFG),"--font-dir","/app/fonts","--sensor-path",str(CFG/"sensors"),
+      "--sensor-mapping",str(CFG/"sensor-mapping.cfg")]
+ p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,cwd=str(PREVIEW))
+ deadline=time.monotonic()+12.0
+ images=[]
+ try:
+  while time.monotonic()<deadline:
+   time.sleep(.25)
+   images=_collect_preview_pngs()
+   if len(images)>=expected_panels:break
+   if p.poll() is not None:break
+ finally:
+  if p.poll() is None:
+   p.terminate()
+   try:p.wait(timeout=2)
+   except subprocess.TimeoutExpired:
+    p.kill();p.wait(timeout=2)
+ stdout,stderr=p.communicate()
+ images=_collect_preview_pngs()
+ return p.returncode,images,(stdout or "")[-4000:],(stderr or "")[-4000:]
+
+@app.post("/api/lcd/generate")
+def generate():
+ try:
+  r=subprocess.run(["python3","/app/lcd_generator.py"],capture_output=True,text=True,timeout=30)
+  if r.returncode!=0:return jsonify(ok=False,error="lcd_generator.py fehlgeschlagen",detail=r.stderr[-4000:]),500
+  base=json.loads(r.stdout.strip().splitlines()[-1])
+  for f in PREVIEW.rglob("*"):
+   if f.is_file():f.unlink(missing_ok=True)
+  try:
+   cfg=json.loads((CFG/"monitor.generated.json").read_text())
+   expected=len(cfg.get("diy",[]))
+  except Exception:
+   expected=int(base.get("panels",1) or 1)
+  rc,images,out,err=_asterctl_preview(max(1,expected))
+  base["asterctlPreviewLog"]=(out+"\n"+err)[-4000:]
+  base["expectedPanels"]=expected
+  if images:
+   base["previewMode"]="asterctl-simulate"
+   base["previewImages"]=images
+   base["previewComplete"]=len(images)>=expected
+   if len(images)<expected:base["previewWarning"]=f"asterctl erzeugte nur {len(images)} von {expected} erwarteten Preview-Panels."
+   return jsonify(base)
+  # Explicit fallback, never pretend it is the real LCD render.
   for f in sorted((CFG/"generated").glob("panel_*.png")):shutil.copy2(f,PREVIEW/f.name)
-  images=preview_images();base["previewMode"]="generated-background-fallback";base["previewWarning"]="asterctl --simulate --save lieferte kein auffindbares PNG."
- base["previewImages"]=images;base["asterctlPreviewLog"]=(sim.stdout+"\n"+sim.stderr)[-4000:]
- return jsonify(base)
+  base["previewMode"]="generated-background-fallback"
+  base["previewImages"]=preview_images()
+  base["previewComplete"]=False
+  base["previewWarning"]="asterctl --simulate --save erzeugte innerhalb von 12 Sekunden kein auffindbares PNG."
+  return jsonify(base)
+ except subprocess.TimeoutExpired as e:
+  return jsonify(ok=False,error="LCD Preview Backend Timeout",detail=str(e)),504
+ except Exception as e:
+  app.logger.exception("LCD preview failed")
+  return jsonify(ok=False,error="LCD Preview Backend Fehler",detail=str(e)),500
+
 @app.post("/api/lcd/activate")
 def activate():
  r=subprocess.run(["python3","/app/lcd_generator.py","--activate"],capture_output=True,text=True,timeout=30)

@@ -2,7 +2,7 @@
 from flask import Flask,jsonify,request,send_from_directory,render_template
 from pathlib import Path
 from PIL import Image
-import json,os,re,subprocess
+import json,os,re,subprocess,time
 CFG=Path(os.environ.get("AOOSTAR_CFG","/app/cfg")); IMG=CFG/"images"; IMG.mkdir(parents=True,exist_ok=True)
 LAYOUT=CFG/"layout-v07.json"; VALUES=CFG/"sensors"/"values.txt"; HISTORY=CFG/"history.json"
 app=Flask(__name__,template_folder="/app/templates",static_folder="/app/static")
@@ -15,8 +15,8 @@ def vals():
     k,v=line.split(":",1);o[k.strip()]=v.strip()
  return o
 def layout():
- if not LAYOUT.exists(): return {"schemaVersion":2,"appVersion":"0.7.8.3","theme":"lcars-orange","switchTime":6,"panels":[]}
- x=json.loads(LAYOUT.read_text());x["schemaVersion"]=2;x["appVersion"]="0.7.8.3";return x
+ if not LAYOUT.exists(): return {"schemaVersion":2,"appVersion":"0.8.1","theme":"lcars-orange","switchTime":6,"panels":[]}
+ x=json.loads(LAYOUT.read_text());x["schemaVersion"]=2;x["appVersion"]="0.8.1";return x
 @app.get("/")
 def index(): return render_template("index.html")
 @app.route("/api/layout",methods=["GET","POST"])
@@ -62,5 +62,14 @@ def generate():
 @app.post("/api/lcd/activate")
 def activate():
  r=subprocess.run(["python3","/app/lcd_generator.py","--activate"],capture_output=True,text=True,timeout=30)
- return jsonify(json.loads(r.stdout.strip().splitlines()[-1])) if r.returncode==0 else (jsonify(ok=False,error=r.stderr),500)
+ if r.returncode!=0:return jsonify(ok=False,error=r.stderr),500
+ result=json.loads(r.stdout.strip().splitlines()[-1])
+ try:
+  reload_flag=Path("/run/aoostar/reload-lcd")
+  reload_flag.parent.mkdir(parents=True,exist_ok=True)
+  reload_flag.write_text(str(time.time()))
+  result["reloadRequested"]=True
+ except Exception as e:
+  result["reloadRequested"]=False;result["reloadError"]=str(e)
+ return jsonify(result)
 if __name__=="__main__":app.run(host="0.0.0.0",port=8765)

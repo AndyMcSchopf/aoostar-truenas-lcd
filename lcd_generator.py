@@ -46,11 +46,13 @@ def textbox(e, native=False):
 
 def sensor_json(e, native=False):
     x, y, w, h, align = textbox(e, native)
+    label = e.get("label", "")
+    if native and label == "truenas_uptime": label = "truenas_uptime_short"
     return {
         "decimalDigits": int(e.get("decimalDigits", -1)), "direction": 1, "fontColor": e.get("fontColor", -1),
         "fontFamily": "HarmonyOS_Sans_SC_Bold", "fontSize": int(e.get("size", 24)),
         "fontWeight": "bold", "height": h, "integerDigits": int(e.get("integerDigits", -1)),
-        "label": e.get("label", ""), "maxAngle": 180, "maxValue": 100, "minAngle": 0, "minValue": 0,
+        "label": label, "maxAngle": 180, "maxValue": 100, "minAngle": 0, "minValue": 0,
         "mode": 1, "name": e.get("title", ""), "pic": "", "textAlign": align,
         "textDirection": 0, "type": 1, "unit": e.get("unit", ""), "value": "",
         "width": w, "x": x, "xz_x": 0, "xz_y": 0, "y": y
@@ -72,8 +74,10 @@ def panel(p, i, values, history):
         rw, rh, ox, oy = image_rect(src.width, src.height, m.get("mode", "cover"), m.get("zoom", 1), m.get("x", 0), m.get("y", 0))
         src = src.resize((round(rw), round(rh))); im.alpha_composite(src, (round(ox), round(oy)))
     d = ImageDraw.Draw(im)
-    native = (i == 0)  # v0.8.0 pilot: SYSTEM only
+    native = (i in (0, 2, 3))  # v0.8.1: SYSTEM, TRUENAS and BILD
     for e in p.get("elements", []):
+        if i == 3 and ((e.get("type") == "header" and e.get("text") == "TrueSTARMax / Working Elf") or (e.get("type") == "sensor" and e.get("label") == "truenas_model")):
+            continue
         q = e.get("type"); a = T.get(e.get("accent", "orange"), T["orange"])
         x, y, w, hh = int(e.get("x",0)), int(e.get("y",0)), int(e.get("w",0)), int(e.get("h",0))
         if q == "header":
@@ -94,11 +98,12 @@ def build():
     layout = json.loads((C / "layout-v07.json").read_text()); values = readvals(); history = hist(); diy = []
     for i, p in enumerate(layout.get("panels", [])):
         fn = panel(p, i, values, history)
-        native = (i == 0)
-        sensors = [sensor_json(e, native) for e in p.get("elements", []) if e.get("type") in (("sensor","badge") if native else ("sensor",))]
+        native = (i in (0, 2, 3))
+        elements = [e for e in p.get("elements", []) if not (i == 3 and ((e.get("type") == "header" and e.get("text") == "TrueSTARMax / Working Elf") or (e.get("type") == "sensor" and e.get("label") == "truenas_model")))]
+        sensors = [sensor_json(e, native) for e in elements if e.get("type") in (("sensor","badge") if native else ("sensor",))]
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.0","pilot":"SYSTEM","panels":len(diy)}
+    return {"ok":True,"version":"0.8.1","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

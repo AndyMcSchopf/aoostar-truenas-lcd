@@ -60,3 +60,14 @@ window.AOOSTAR_LAYOUT={
   L.schemaVersion=5;L.appVersion="0.7.11.1";return L;
  }
 };
+/* v0.8.4 shared LCD-first cover geometry.
+   Equivalent to Pillow ImageOps.fit/cover semantics:
+   scale to cover destination, center overflow, then apply editor x/y in output pixels. */
+function lcdCoverRect(sw, sh, dw, dh, zoom, ox, oy) {
+  sw = Math.max(1, Number(sw)||1); sh = Math.max(1, Number(sh)||1);
+  dw = Math.max(1, Number(dw)||1); dh = Math.max(1, Number(dh)||1);
+  zoom = Math.max(0.01, Number(zoom)||1);
+  const scale = Math.max(dw/sw, dh/sh) * zoom;
+  const rw = sw*scale, rh = sh*scale;
+  return {x:(dw-rw)/2 + (Number(ox)||0), y:(dh-rh)/2 + (Number(oy)||0), w:rw, h:rh, scale};
+}

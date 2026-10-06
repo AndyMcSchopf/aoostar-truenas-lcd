@@ -24,3 +24,27 @@ new MutationObserver(fixImageDeleteLabels).observe(document.documentElement,{chi
 document.addEventListener("DOMContentLoaded",fixImageDeleteLabels);
 setTimeout(fixImageDeleteLabels,250);
 })();
+;(()=>{
+"use strict";
+function compactUptime(v){
+ const m=String(v||"").match(/(?:(\d+)\s+day[s]?,?\s*)?(\d+):(\d+):/i);
+ if(!m)return v;
+ const h=(parseInt(m[1]||"0",10)*24)+parseInt(m[2],10),min=parseInt(m[3],10);
+ return h+"h "+min+"m";
+}
+function normalizeEditorText(){
+ // Match LCD-first value formatting in the editable browser preview.
+ document.querySelectorAll("[data-sensor],.sensor-value,.value").forEach(e=>{
+   const k=((e.dataset&&e.dataset.sensor)||e.previousElementSibling?.textContent||"").toLowerCase();
+   let t=(e.textContent||"").trim();
+   if(/uptime|laufzeit/.test(k)) e.textContent=compactUptime(t);
+ });
+}
+function markLcdFirst(){
+ const canvas=document.querySelector("#canvas,.canvas,.panel-canvas,#preview,.preview");
+ if(canvas) canvas.classList.add("lcd-first-editor");
+}
+new MutationObserver(()=>{markLcdFirst();normalizeEditorText()}).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+document.addEventListener("DOMContentLoaded",()=>{markLcdFirst();normalizeEditorText()});
+setTimeout(()=>{markLcdFirst();normalizeEditorText()},250);
+})();

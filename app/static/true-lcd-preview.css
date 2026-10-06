@@ -27,3 +27,22 @@
   max-width:none !important;
   margin:0 !important;
 }
+
+/* v0.8.4 LCD-first editor alignment */
+.lcd-first-editor .sensor-value,
+.lcd-first-editor .value{
+  font-weight:700;
+}
+.lcd-first-editor .sparkline,
+.lcd-first-editor svg.sparkline,
+.lcd-first-editor canvas.sparkline{
+  transform:translateY(8px);
+}
+.lcd-first-editor .network-card .label,
+.lcd-first-editor [data-role="network"] .label{
+  transform:translateY(5px);
+}
+.lcd-first-editor .status-card .status-value,
+.lcd-first-editor [data-role="status"] .status-value{
+  font-weight:700;
+}

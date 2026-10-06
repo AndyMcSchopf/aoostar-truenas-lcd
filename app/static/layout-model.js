@@ -56,8 +56,8 @@ window.AOOSTAR_LAYOUT={
    if(sto){sto.elements=this.storageElements();sto.background="";}
    if(tru){tru.elements=this.truenasElements();tru.background="";}
   }
-  for(const p of L.panels){p.image=Object.assign({mode:"cover",x:0,y:0,zoom:1},p.image||{});p.elements=p.elements||[];}
-  L.schemaVersion=5;L.appVersion="0.8.4.1";return L;
+  for(const p of L.panels){p.image=Object.assign({mode:"cover",x:0,y:0,zoom:1},p.image||{});p.elements=p.elements||[];for(const e of p.elements){if(e.type==="sensor"){if(!e.align)e.align="center";if(!e.titleAlign)e.titleAlign="left";}}}
+  L.schemaVersion=5;L.appVersion="0.8.4.4";return L;
  }
 };
 /* v0.8.4 shared LCD-first cover geometry.

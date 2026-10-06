@@ -57,7 +57,7 @@ window.AOOSTAR_LAYOUT={
    if(tru){tru.elements=this.truenasElements();tru.background="";}
   }
   for(const p of L.panels){p.image=Object.assign({mode:"cover",x:0,y:0,zoom:1},p.image||{});p.elements=p.elements||[];}
-  L.schemaVersion=5;L.appVersion="0.7.11.1";return L;
+  L.schemaVersion=5;L.appVersion="0.8.4.1";return L;
  }
 };
 /* v0.8.4 shared LCD-first cover geometry.

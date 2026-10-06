@@ -16,8 +16,9 @@ def vals():
     k,v=line.split(":",1);o[k.strip()]=v.strip()
  return o
 def layout():
- if not LAYOUT.exists(): return {"schemaVersion":2,"appVersion":"0.8.1","theme":"lcars-orange","switchTime":6,"panels":[]}
- x=json.loads(LAYOUT.read_text());x["schemaVersion"]=2;x["appVersion"]="0.8.1";return x
+ if not LAYOUT.exists(): return {"schemaVersion":5,"appVersion":"0.8.7","theme":"lcars-orange","switchTime":6,"panels":[]}
+ # Persistence contract: GET is read-only. Never rewrite/downgrade schema or appVersion here.
+ return json.loads(LAYOUT.read_text())
 @app.get("/")
 def index(): return render_template("index.html")
 @app.route("/api/layout",methods=["GET","POST"])
@@ -57,7 +58,14 @@ def delete_image(name):(IMG/Path(name).name).unlink(missing_ok=True);return json
 @app.get("/user-images/<path:name>")
 def user_image(name):return send_from_directory(IMG,name)
 def preview_images():
- return [{"name":f.name,"url":"/lcd-preview/"+f.name+"?v="+str(f.stat().st_mtime_ns)} for f in sorted(PREVIEW.glob("*.png"))]
+ try:
+  names=[p.get("name") or f"Panel {i+1}" for i,p in enumerate(json.loads(LAYOUT.read_text()).get("panels",[]))]
+ except Exception:
+  names=[]
+ out=[]
+ for i,f in enumerate(sorted(PREVIEW.glob("preview-*.png"))):
+  out.append({"name":f.name,"panel":i+1,"panelName":names[i] if i<len(names) else f"Panel {i+1}","url":"/lcd-preview/"+f.name+"?v="+str(f.stat().st_mtime_ns)})
+ return out
 
 @app.get("/lcd-preview/<path:name>")
 def lcd_preview_file(name): return send_from_directory(PREVIEW,Path(name).name)

@@ -91,14 +91,13 @@ def panel(p, i, values, history):
         rw, rh, ox, oy = image_rect(src.width, src.height, m.get("mode", "cover"), m.get("zoom", 1), m.get("x", 0), m.get("y", 0))
         src = src.resize((round(rw), round(rh))); im.alpha_composite(src, (round(ox), round(oy)))
     d = ImageDraw.Draw(im)
-    native = (i in (0, 2, 3))  # v0.8.1: SYSTEM, TRUENAS and BILD
+    native = any(e.get("type") in ("sensor", "badge") for e in p.get("elements", []))
     for e in p.get("elements", []):
-        if i == 3 and ((e.get("type") == "header" and e.get("text") == "TrueSTARMax / Working Elf") or (e.get("type") == "sensor" and e.get("label") == "truenas_model")):
-            continue
         q = e.get("type"); a = T.get(e.get("accent", "orange"), T["orange"])
         x, y, w, hh = int(e.get("x",0)), int(e.get("y",0)), int(e.get("w",0)), int(e.get("h",0))
-        if q == "header":
-            d.rounded_rectangle((x,y,x+w,y+hh), radius=min(20,max(1,hh//2)), fill=rgb(a)); d.text((x+16,y+8),e.get("text",""),font=font(17),fill=(10,10,10))
+        if q in ("header", "lcars_header"):
+            d.rounded_rectangle((x,y,x+w,y+hh), radius=min(20,max(1,hh//2)), fill=rgb(a))
+            d.text((x+16,y+8), e.get("text",""), font=font(int(e.get("size",18))), fill=text_rgb(e.get("textColor","auto")))
         elif q == "card":
             radius = min(20, max(1, hh // 2))
             d.rounded_rectangle((x,y,x+w,y+hh),radius=radius,fill=rgb(T["panel"]))
@@ -109,9 +108,15 @@ def panel(p, i, values, history):
         elif q == "pool":
             n=int(e.get("index",0)); k=f"truenas_pool_{n}_"; pct=float(values.get(k+"used_percent",0) or 0); col="#CC6666" if pct>=90 else "#FFCC66" if pct>=75 else a
             d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"])); d.rectangle((x,y,x+w,y+30),fill=rgb(col)); d.text((x+14,y+5),f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}',font=font(13),fill=(10,10,10)); d.text((x+18,y+42),f"{pct:.0f}%",font=font(25),fill=rgb(T["text"])); d.text((x+100,y+49),f'{values.get(k+"used","")} / {values.get(k+"size","")}',font=font(12),fill=text_rgb(e.get("titleColor","muted"),"muted")); d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57)); d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
+        elif q == "bar":
+            try: value=float(values.get(e.get("label"),0) or 0)
+            except Exception: value=0
+            maximum=float(e.get("max",100) or 100); pct=max(0.0,min(1.0,value/maximum if maximum else 0.0))
+            d.rounded_rectangle((x,y,x+w,y+hh),radius=max(1,min(hh//2,6)),fill=(45,49,57))
+            if pct>0: d.rounded_rectangle((x,y,x+round(w*pct),y+hh),radius=max(1,min(hh//2,6)),fill=rgb(a))
         elif q == "sparkline": spark(im,(x,y,w,hh),history.get(e.get("label"),[]),a,e.get("max"))
-        elif q == "text": d.text((x,y),e.get("text",""),font=font(e.get("size",24)),fill=rgb(T["text"]))
-        elif q in ("sensor", "badge") and native:
+        elif q == "text": d.text((x,y),e.get("text",""),font=font(int(e.get("size",24))),fill=text_rgb(e.get("textColor","auto")))
+        elif q in ("sensor", "badge"):
             draw_static_label(d, e)
     fn = f"panel_{i+1}.png"; im.convert("RGB").save(G / fn); return fn
 
@@ -120,12 +125,12 @@ def build():
     layout = json.loads((C / "layout-v07.json").read_text()); values = readvals(); history = hist(); diy = []
     for i, p in enumerate(layout.get("panels", [])):
         fn = panel(p, i, values, history)
-        native = (i in (0, 2, 3))
-        elements = [e for e in p.get("elements", []) if not (i == 3 and ((e.get("type") == "header" and e.get("text") == "TrueSTARMax / Working Elf") or (e.get("type") == "sensor" and e.get("label") == "truenas_model")))]
-        sensors = [sensor_json(e, native) for e in elements if e.get("type") in (("sensor","badge") if native else ("sensor",))]
+        elements = p.get("elements", [])
+        native = any(e.get("type") in ("sensor", "badge") for e in elements)
+        sensors = [sensor_json(e, True) for e in elements if e.get("type") in ("sensor", "badge")]
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.6","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
+    return {"ok":True,"version":"0.8.7","panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

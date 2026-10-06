@@ -46,7 +46,10 @@ def textbox(e, native=False):
 
 def sensor_json(e, native=False):
     x, y, w, h, align = textbox(e, native)
-    label = e.get("label", "")
+    source_label = e.get("label", "")
+    label = source_label
+    if native and source_label in ("truenas_net_down", "truenas_net_up"):
+        y += 19
     if native and label == "truenas_uptime": label = "truenas_uptime_short"
     return {
         "decimalDigits": int(e.get("decimalDigits", -1)), "direction": 1, "fontColor": e.get("fontColor", -1),
@@ -62,9 +65,15 @@ def draw_static_label(d, e):
     title = str(e.get("title", "")).strip()
     if not title: return
     x, y = int(e.get("x", 0)), int(e.get("y", 0))
-    # Keep labels readable on the 960x376 LCD, but subordinate to the live value.
     label_size = max(15, min(18, int(e.get("size", 24) * 0.48)))
-    d.text((x, max(0, y - label_size - 4)), title, font=font(label_size), fill=rgb(T["muted"]))
+    # Network labels are special: editor places DOWN/UP below the blue header.
+    # Keep the same semantic placement on the LCD instead of drawing them above
+    # the live-value origin (which put them inside the header).
+    if e.get("label") in ("truenas_net_down", "truenas_net_up"):
+        ly = y
+    else:
+        ly = max(0, y - label_size - 4)
+    d.text((x, ly), title, font=font(label_size), fill=rgb(T["muted"]))
 
 def panel(p, i, values, history):
     im = Image.new("RGBA", (W, H), rgb(T["bg"]) + (255,))
@@ -103,7 +112,7 @@ def build():
         sensors = [sensor_json(e, native) for e in elements if e.get("type") in (("sensor","badge") if native else ("sensor",))]
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.1","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
+    return {"ok":True,"version":"0.8.4.2","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

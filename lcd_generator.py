@@ -12,6 +12,12 @@ B = C / "backups"
 T = {"bg":"#050608","panel":"#111319","orange":"#F29A49","amber":"#F6B85A",
      "violet":"#8E7CC3","blue":"#6699CC","pink":"#C96B9A","text":"#F5EEE6","muted":"#AFA7A0"}
 
+def text_rgb(name, default="white"):
+    if not name or name in ("auto","white"): return rgb(T["text"])
+    if name=="muted": return rgb(T["muted"])
+    if name=="green": return (102,204,153)
+    return rgb(T.get(name, T["text"]))
+
 def clean_generated():
     if G.exists(): shutil.rmtree(G)
     G.mkdir(parents=True, exist_ok=True)
@@ -127,10 +133,6 @@ def activate():
     shutil.copy2(O, M); return result
 
 if __name__ == "__main__":
-    import sys; print(json.dumps(activate() if "--activate" in sys.argv else build()))def text_rgb(name, default="white"):
-    if not name or name in ("auto","white"): return rgb(T["text"])
-    if name=="muted": return rgb(T["muted"])
-    if name=="green": return (102,204,153)
-    return rgb(T.get(name, T["text"]))
+    import sys; print(json.dumps(activate() if "--activate" in sys.argv else build()))
 
 

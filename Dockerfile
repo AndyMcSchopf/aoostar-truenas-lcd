@@ -28,7 +28,7 @@ RUN chmod +x /app/start.sh
 RUN python3 -m py_compile /app/webui.py /app/history.py /app/truenas-sensors.py /app/lcd_generator.py /app/render_shared.py
 RUN bash -n /app/start.sh
 RUN test -s /app/fonts/HarmonyOS_Sans_SC_Bold.ttf
-RUN VERSION_VALUE="$(tr -d '\r\n' </app/VERSION)" && echo "Building AOOSTAR TrueNAS LCD v${VERSION_VALUE}" && printf '%s\n' "${VERSION_VALUE}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$'
+RUN VERSION_VALUE="$(tr -d '\r\n' </app/VERSION)" && echo "Building AOOSTAR TrueNAS LCD v${VERSION_VALUE}" && printf '%s\n' "${VERSION_VALUE}" | grep -Eq '^[0-9]+(\.[0-9]+){2,}$'
 RUN asterctl --help 2>&1 | grep -q -- '--config'
 RUN asterctl --help 2>&1 | grep -q -- '--sensor-path'
 RUN aster-sysinfo --help 2>&1 | grep -q -- '--out'

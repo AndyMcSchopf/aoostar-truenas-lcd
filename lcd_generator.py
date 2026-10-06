@@ -125,7 +125,7 @@ def build():
         sensors = [sensor_json(e, native) for e in elements if e.get("type") in (("sensor","badge") if native else ("sensor",))]
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.5.4","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
+    return {"ok":True,"version":"0.8.6","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

@@ -1,5 +1,12 @@
 "use strict";
-let L,V,S,T,H={},IMG={},pi=0,ei=-1,scale=1,imageMode=false;const $=x=>document.getElementById(x),ACC=["orange","amber","violet","blue","pink"];async function J(u,o){let r=await fetch(u,o);if(!r.ok)throw Error(await r.text());return r.json()}const P=()=>L.panels[pi],E=()=>P().elements[ei],TH=()=>T[L.theme]||T["lcars-orange"],C=a=>TH()[a]||TH().orange,SNAP=n=>$("snap").checked?Math.round(n/10)*10:Math.round(n);
+let L,V,S,T,H={},IMG={},pi=0,ei=-1,scale=1,imageMode=false;
+let inspectorToken=0;
+function uid(){return "e_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,9)}
+function ensureIds(){(L?.panels||[]).forEach(p=>(p.elements||[]).forEach(e=>{if(!e.id)e.id=uid()}))}
+function selectedId(){return ei>=0&&P().elements[ei]?P().elements[ei].id:null}
+function indexById(id){return P().elements.findIndex(e=>e.id===id)}
+function byId(id){let i=indexById(id);return i>=0?P().elements[i]:null}
+const $=x=>document.getElementById(x),ACC=["orange","amber","violet","blue","pink"];async function J(u,o){let r=await fetch(u,o);if(!r.ok)throw Error(await r.text());return r.json()}const P=()=>L.panels[pi],E=()=>P().elements[ei],TH=()=>T[L.theme]||T["lcars-orange"],C=a=>TH()[a]||TH().orange,SNAP=n=>$("snap").checked?Math.round(n/10)*10:Math.round(n);
 function fresh(){return{name:"NEUES PANEL",duration:6,background:"",image:{mode:"cover",x:0,y:0,zoom:1},elements:[{type:"lcars_header",text:"NEUES PANEL",x:18,y:14,w:924,h:42,accent:"orange"}]}}
 async function init(){[L,V,S,T,H]=await Promise.all([J("/api/layout"),J("/api/values"),J("/api/sensors"),J("/api/themes"),J("/api/history")]);L=window.AOOSTAR_LAYOUT.migrate(L);if(!L.panels.length)L.panels=[fresh()];wire();render();save();loadImages();setInterval(refresh,5000)}
 function wire(){const pal=[["TEXT","text"],["LCARS CARD","card"],["STATUS","badge"],["BALKEN","bar"],["KURVE","sparkline"],["TRENNER","line"]];$("palette").innerHTML=pal.map(x=>`<button data-t="${x[1]}">${x[0]}</button>`).join("");$("palette").onclick=e=>e.target.dataset.t&&add(e.target.dataset.t);$("addPanel").onclick=()=>{L.panels.push(fresh());pi=L.panels.length-1;ei=-1;render();save()};$("dupPanel").onclick=()=>{L.panels.splice(pi+1,0,structuredClone(P()));pi++;render();save()};$("delPanel").onclick=()=>{if(L.panels.length>1&&confirm("Panel löschen?")){L.panels.splice(pi,1);pi=Math.max(0,pi-1);ei=-1;render();save()}};$("leftPanel").onclick=()=>movePanel(-1);$("rightPanel").onclick=()=>movePanel(1);$("panelName").onchange=()=>{P().name=$("panelName").value;renderPanels();save()};$("duration").onchange=()=>{P().duration=+$("duration").value;save()};$("search").oninput=renderSensors;$("theme").onchange=()=>{L.theme=$("theme").value;renderCanvas();save()};$("save").onclick=save;$("upload").onclick=()=>$("file").click();$("file").onchange=upload;$("imgMode").onclick=()=>{imageMode=!imageMode;$("imgMode").textContent="BILDPOSITION: "+(imageMode?"EIN":"AUS");$("imgMode").classList.toggle("active",imageMode)};$("removeBg").onclick=()=>{P().background="";renderCanvas();save()};["fit","zoom","imgX","imgY"].forEach(id=>$(id).onchange=imageProps);$("preview").onclick=async()=>{await save();let x=await J("/api/lcd/generate",{method:"POST"});status(x.ok?`Vorschau: ${x.panels} Panels`:x.error)};$("activate").onclick=async()=>{if(confirm("LCD-Konfiguration sichern und aktivieren?")){let x=await J("/api/lcd/activate",{method:"POST"});status(x.ok?"LCD-Konfiguration aktiviert – Neustart/Reload erforderlich":x.error)}};addEventListener("resize",fit);addEventListener("keydown",keys);$("canvas").onmousedown=bgDrag}
@@ -8,7 +15,7 @@ function movePanel(d){let n=pi+d;if(n<0||n>=L.panels.length)return;[L.panels[pi]
 function render(){renderPanels();renderTheme();renderSensors();renderCanvas();inspect();syncImage();fit()}
 function renderPanels(){$("panels").innerHTML=L.panels.map((p,i)=>`<button class="${i===pi?"active":""}" data-i="${i}">${i+1} ${p.name}</button>`).join("");$("panels").onclick=e=>{if(e.target.dataset.i!==undefined){pi=+e.target.dataset.i;ei=-1;render()}};$("panelName").value=P().name;$("duration").value=P().duration}
 function renderTheme(){$("theme").innerHTML=Object.entries(T).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join("");$("theme").value=L.theme}
-function renderSensors(){let q=$("search").value.toLowerCase();$("sensors").innerHTML=S.filter(x=>(x.name+x.id).toLowerCase().includes(q)).map(x=>`<div class=sensor data-id="${x.id}"><b>${x.name}</b><br><span class=muted>${x.value}</span></div>`).join("");$("sensors").onclick=e=>{let n=e.target.closest(".sensor");if(n){P().elements.push({type:"sensor",label:n.dataset.id,title:n.dataset.id,x:80,y:90,w:82,h:36,size:24,unit:"",align:"center",titleAlign:"left"});ei=P().elements.length-1;renderCanvas();inspect();save()}}}
+function renderSensors(){let q=$("search").value.toLowerCase();$("sensors").innerHTML=S.filter(x=>(x.name+x.id).toLowerCase().includes(q)).map(x=>`<div class=sensor data-id="${x.id}"><b>${x.name}</b><br><span class=muted>${x.value}</span></div>`).join("");$("sensors").onclick=e=>{let n=e.target.closest(".sensor");if(n){P().elements.push({id:uid(),type:"sensor",label:n.dataset.id,title:n.dataset.id,x:80,y:90,w:82,h:36,size:24,unit:"",align:"center",titleAlign:"left"});ei=P().elements.length-1;renderCanvas();inspect();save()}}}
 function renderCanvas(){
  let c=$("canvas"),t=TH(),m=P().image,bg=P().background,d=bg?IMG[bg]:null;
  c.style.backgroundColor=t.bg;c.style.backgroundImage=bg?`url('/user-images/${encodeURIComponent(bg)}')`:"none";
@@ -21,7 +28,7 @@ function renderCanvas(){
   c.style.backgroundSize="auto";c.style.backgroundPosition="0 0";
  }
  c.innerHTML=P().elements.map((z,i)=>html(z,i,t)).join("");
- c.querySelectorAll(".obj").forEach(n=>{n.onclick=e=>{e.stopPropagation();ei=+n.dataset.i;renderCanvas();inspect()};n.onmousedown=drag});
+ c.querySelectorAll(".obj").forEach(n=>{n.onclick=e=>{e.stopPropagation();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();ei=+n.dataset.i;renderCanvas();inspect()};n.onmousedown=drag});
  addResizeHandles();
 }
 
@@ -58,7 +65,7 @@ function addResizeHandles(){
 }
 function resizeStart(ev){
  ev.preventDefault();ev.stopPropagation();
- let z=E(),dir=ev.currentTarget.dataset.dir,b=effectiveWH(z),
+ let editId=selectedId(),z=byId(editId),dir=ev.currentTarget.dataset.dir,b=effectiveWH(z),
      sx=ev.clientX,sy=ev.clientY,ox=Number(z.x)||0,oy=Number(z.y)||0,ow=b.w,oh=b.h;
  // Persist effective sensor defaults as soon as visual resizing starts.
  if(z.w===undefined)z.w=ow;if(z.h===undefined)z.h=oh;
@@ -77,59 +84,47 @@ function field(label,id,value,attrs=""){return`<label class=prop-field><span>${l
 function selectField(label,id,options,value){return`<label class=prop-field><span>${label}</span><select id="${id}">${options.map(([v,n])=>`<option value="${v}" ${v===value?"selected":""}>${n}</option>`).join("")}</select></label>`}
 function group(title,body){return`<div class=prop-group><div class=prop-title>${title}</div>${body}</div>`}
 function inspect(){
+ inspectorToken++;
  if(ei<0){$("inspector").innerHTML='<div class="prop-empty">Element auswählen.</div>';return}
- let z=E(),b=effectiveWH(z),res=canResize(z),htmls="";
- htmls+=group("ELEMENT",
-   field("Typ","itype",z.type,"disabled")+
-   field(z.type==="sensor"?"Überschrift":"Text / Titel","it",z.text??z.title??"")
- );
- htmls+=group("POSITION & GRÖSSE",
-   '<div class=prop-grid4>'+
-   field("X","ix",z.x,'type="number"')+
-   field("Y","iy",z.y,'type="number"')+
-   field("Breite","iw",res?b.w:0,`type="number" min="24" ${res?"":"disabled"}`)+
-   field("Höhe","ih",res?b.h:0,`type="number" min="18" ${res?"":"disabled"}`)+
-   '</div>'+
-   (res?'<div class=prop-hint>Größe auch direkt im Editor an den Griffen ändern.</div>':"")
- );
+ let z=E(),editId=z.id,token=inspectorToken,b=effectiveWH(z),res=canResize(z),htmls="";
+ htmls+=group("ELEMENT",field("Typ","itype",z.type,"disabled")+field(z.type==="sensor"?"Überschrift":"Text / Titel","it",z.text??z.title??""));
+ htmls+=group("POSITION & GRÖSSE",'<div class=prop-grid4>'+field("X","ix",z.x,'type="number"')+field("Y","iy",z.y,'type="number"')+field("Breite","iw",res?b.w:0,`type="number" min="24" ${res?"":"disabled"}`)+field("Höhe","ih",res?b.h:0,`type="number" min="18" ${res?"":"disabled"}`)+'</div>'+(res?'<div class=prop-hint>Größe auch direkt im Editor an den Griffen ändern.</div>':""));
  let textProps="";
- if(z.type==="sensor"||z.type==="text"){
-   textProps+=field("Schriftgröße","isz",Number(z.size)||24,'type="number" min="8" max="96" step="1"');
- }
- if(z.type==="sensor"){
-   textProps+=selectField("Überschrift ausrichten","ita",[["left","LINKS"],["center","MITTIG"],["right","RECHTS"]],z.titleAlign||"left");
-   textProps+=selectField("Wert ausrichten","iva",[["left","LINKS"],["center","MITTIG"],["right","RECHTS"]],z.align||"center");
- }
+ if(z.type==="sensor"||z.type==="text")textProps+=field("Schriftgröße","isz",Number(z.size)||24,'type="number" min="8" max="96" step="1"');
+ if(z.type==="sensor"){textProps+=selectField("Überschrift ausrichten","ita",[["left","LINKS"],["center","MITTIG"],["right","RECHTS"]],z.titleAlign||"left");textProps+=selectField("Wert ausrichten","iva",[["left","LINKS"],["center","MITTIG"],["right","RECHTS"]],z.align||"center")}
  if(textProps)htmls+=group("TEXT",textProps);
  htmls+=group("DARSTELLUNG",selectField("Akzentfarbe","ia",ACC.map(a=>[a,a.toUpperCase()]),z.accent||"orange"));
  htmls+=group("ANORDNUNG",'<div class=prop-actions><button id=front>VORNE</button><button id=back>HINTEN</button><button id=dup>DUPLIZIEREN</button><button id=del>LÖSCHEN</button></div>');
  $("inspector").innerHTML=htmls;
- ["it","ix","iy","iw","ih","isz","ia","ita","iva"].forEach(id=>{if($(id)){$(id).onchange=apply;$(id).oninput=(id==="ix"||id==="iy"||id==="iw"||id==="ih"||id==="isz")?apply:null}});
- $("dup").onclick=()=>{let q=structuredClone(E());q.x+=10;q.y+=10;P().elements.push(q);ei=P().elements.length-1;renderCanvas();inspect();save()};
- $("del").onclick=()=>{P().elements.splice(ei,1);ei=-1;renderCanvas();inspect();save()};
- $("front").onclick=()=>layer(1);$("back").onclick=()=>layer(-1)
+ const commit=(ev)=>{if(token!==inspectorToken)return;let target=byId(editId);if(!target)return;applyTo(target,ev?.target?.id)};
+ ["it","ix","iy","iw","ih","isz","ia","ita","iva"].forEach(id=>{let el=$(id);if(!el)return;el.oninput=(["ix","iy","iw","ih","isz","it"].includes(id))?commit:null;el.onchange=commit});
+ $("dup").onclick=()=>{let src=byId(editId);if(!src)return;let q=structuredClone(src);q.id=uid();q.x+=10;q.y+=10;P().elements.push(q);ei=P().elements.length-1;renderCanvas();inspect();save()};
+ $("del").onclick=()=>{let idx=indexById(editId);if(idx<0)return;P().elements.splice(idx,1);ei=-1;renderCanvas();inspect();save()};
+ $("front").onclick=()=>layerById(editId,1);$("back").onclick=()=>layerById(editId,-1)
 }
 function updateInspectorGeometry(){
  let z=E(),b=effectiveWH(z);
  if($("ix"))$("ix").value=Math.round(z.x);if($("iy"))$("iy").value=Math.round(z.y);
  if($("iw"))$("iw").value=Math.round(b.w);if($("ih"))$("ih").value=Math.round(b.h);
 }
-function apply(){
- let z=E();
- if(z.text!==undefined&&$("it"))z.text=$("it").value;
- if(z.title!==undefined&&$("it"))z.title=$("it").value;
- if($("ix"))z.x=+$("ix").value;if($("iy"))z.y=+$("iy").value;
- if(canResize(z)){if($("iw"))z.w=Math.max(24,+$("iw").value||24);if($("ih"))z.h=Math.max(18,+$("ih").value||18)}
- if($("isz")&&(z.type==="sensor"||z.type==="text"))z.size=Math.max(8,Math.min(96,+$("isz").value||24));
- if($("ia"))z.accent=$("ia").value;
- if(z.type==="sensor"){if($("ita"))z.titleAlign=$("ita").value;if($("iva"))z.align=$("iva").value}
+function applyTo(z,sourceId){
+ if(!z)return;
+ if(sourceId==="it"){if(z.text!==undefined)z.text=$("it").value;if(z.title!==undefined)z.title=$("it").value}
+ if(sourceId==="ix")z.x=+$("ix").value;if(sourceId==="iy")z.y=+$("iy").value;
+ if(canResize(z)&&sourceId==="iw")z.w=Math.max(24,+$("iw").value||24);
+ if(canResize(z)&&sourceId==="ih")z.h=Math.max(18,+$("ih").value||18);
+ if(sourceId==="isz"&&(z.type==="sensor"||z.type==="text"))z.size=Math.max(8,Math.min(96,+$("isz").value||24));
+ if(sourceId==="ia")z.accent=$("ia").value;
+ if(z.type==="sensor"&&sourceId==="ita")z.titleAlign=$("ita").value;
+ if(z.type==="sensor"&&sourceId==="iva")z.align=$("iva").value;
  renderCanvas();save()
 }
-function layer(d){let a=P().elements,n=ei+d;if(n<0||n>=a.length)return;[a[ei],a[n]]=[a[n],a[ei]];ei=n;renderCanvas();inspect();save()}
+function layerById(id,d){let a=P().elements,idx=indexById(id),n=idx+d;if(idx<0||n<0||n>=a.length)return;[a[idx],a[n]]=[a[n],a[idx]];ei=n;renderCanvas();inspect();save()}
 function drag(ev){
  if(imageMode||ev.target.classList.contains("resize-handle"))return;
  ev.preventDefault();ei=+ev.currentTarget.dataset.i;
- let z=E(),sx=ev.clientX,sy=ev.clientY,ox=z.x,oy=z.y;
+ let editId=P().elements[ei]?.id,z=byId(editId);if(!z)return;
+ let sx=ev.clientX,sy=ev.clientY,ox=z.x,oy=z.y;
  function mv(e){z.x=SNAP(ox+(e.clientX-sx)/scale);z.y=SNAP(oy+(e.clientY-sy)/scale);renderCanvas();updateInspectorGeometry()}
  function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up);inspect();save()}
  addEventListener("mousemove",mv);addEventListener("mouseup",up)

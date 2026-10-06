@@ -12,3 +12,5 @@
 #lcdInlinePreview .lip-state,
 #lcdInlinePreview .lip-stage{position:relative;z-index:1}
 #lcdInlinePreview .lip-stage{min-height:210px}
+
+#lcd-preview-slot{grid-column:2;min-width:0;width:100%;align-self:start}#lcd-preview-slot #lcdInlinePreview{width:100%!important;max-width:none!important;margin:16px 0 24px!important}

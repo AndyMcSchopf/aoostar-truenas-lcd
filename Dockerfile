@@ -20,6 +20,7 @@ COPY truenas-sensors.py lcd_generator.py start.sh /app/
 COPY VERSION /app/VERSION
 COPY app/webui.py app/history.py app/render_shared.py /app/
 COPY app/roundtrip_selftest.py /app/roundtrip_selftest.py
+COPY app/title_alignment_selftest.py /app/title_alignment_selftest.py
 COPY app/factory_bootstrap.py /app/factory_bootstrap.py
 COPY defaults/factory /defaults/factory
 COPY app/templates /app/templates
@@ -28,6 +29,7 @@ COPY app/static /app/static
 RUN chmod +x /app/start.sh
 RUN python3 -m py_compile /app/webui.py /app/history.py /app/truenas-sensors.py /app/lcd_generator.py /app/render_shared.py /app/roundtrip_selftest.py
 RUN python3 /app/roundtrip_selftest.py
+RUN python3 /app/title_alignment_selftest.py
 RUN bash -n /app/start.sh
 RUN test -s /app/fonts/HarmonyOS_Sans_SC_Bold.ttf
 RUN VERSION_VALUE="$(tr -d '\r\n' </app/VERSION)" && echo "Building AOOSTAR TrueNAS LCD v${VERSION_VALUE}" && printf '%s\n' "${VERSION_VALUE}" | grep -Eq '^[0-9]+(\.[0-9]+){2,}$'

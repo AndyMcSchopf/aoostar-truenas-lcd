@@ -81,7 +81,19 @@ def draw_static_label(d, e):
     title, label_size, gap = label_metrics(e)
     if not title: return
     x, y = int(e.get("x", 0)), int(e.get("y", 0))
-    d.text((x, y), title, font=font(label_size), fill=text_rgb(e.get("titleColor","muted"),"muted"))
+    size = int(e.get("size", 24))
+    w = int(e.get("w") or max(72, round(size * 3.4)))
+    align = str(e.get("titleAlign", "left")).lower()
+    f = font(label_size)
+    bb = d.textbbox((0, 0), title, font=f)
+    tw = max(0, bb[2] - bb[0])
+    if align == "center":
+        tx = x + max(0, (w - tw) // 2)
+    elif align == "right":
+        tx = x + max(0, w - tw)
+    else:
+        tx = x
+    d.text((tx, y), title, font=f, fill=text_rgb(e.get("titleColor","muted"),"muted"))
 
 def panel(p, i, values, history):
     im = Image.new("RGBA", (W, H), rgb(T["bg"]) + (255,))

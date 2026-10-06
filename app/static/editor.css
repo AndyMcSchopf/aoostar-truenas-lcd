@@ -29,3 +29,6 @@
 
 /* v0.8.5.1 stable inspector state */
 .prop-field input:focus,.prop-field select:focus{outline:1px solid #f6b85a;outline-offset:1px}
+
+/* v0.8.5.4 typography controls */
+.prop-group select{font-size:12px}

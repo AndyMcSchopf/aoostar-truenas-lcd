@@ -153,7 +153,6 @@ while True:
         snap=api_snapshot()
         if snap:
             vals['truenas_api']='ok'
-            vals['truenas_system_status']='OK'
             sys=snap['system']; pools=snap['pools']; apps=snap['apps']
             vals['truenas_hostname']=sys.get('hostname','n/a')
             vals['truenas_version']=sys.get('version','n/a')
@@ -169,6 +168,17 @@ while True:
                 'truenas_apps_updates':str(upgrades), 'truenas_pool_count':str(len(pools)),
             })
             healthy=sum(1 for p in pools if p.get('healthy') is True or p.get('status')=='ONLINE')
+            unhealthy_pools=max(0,len(pools)-healthy)
+            if unhealthy_pools:
+                health_state='KRITISCH'; health_detail=f'{unhealthy_pools} Pool(s) nicht ONLINE'
+            elif crashed:
+                health_state='WARNUNG'; health_detail=f'{crashed} App(s) CRASHED'
+            elif upgrades:
+                health_state='HINWEIS'; health_detail=f'{upgrades} Update(s) verfügbar'
+            else:
+                health_state='ONLINE'; health_detail='System, Pools und Apps ohne erkannten Fehler'
+            vals['truenas_system_status']=health_state
+            vals['truenas_system_status_detail']=health_detail
             vals['truenas_pools_healthy']=f'{healthy}/{len(pools)}'
             vals['truenas_pools_healthy_de']=f'{healthy} von {len(pools)} OK'
             vals['truenas_pool_health']=' '.join(f"{p.get('name')}:{p.get('status')}" for p in pools) or 'no pools'
@@ -190,6 +200,8 @@ while True:
             vals['truenas_scrub_de']=' '.join(active) if active else 'kein Scrub aktiv'
     except Exception as e:
         vals['truenas_api']='fehler'
+        vals['truenas_system_status']='UNBEKANNT'
+        vals['truenas_system_status_detail']='TrueNAS API nicht auswertbar'
         vals['truenas_api_error']=str(e).replace('\n',' ')[:160]
     write(vals)
 

@@ -8,7 +8,7 @@ function movePanel(d){let n=pi+d;if(n<0||n>=L.panels.length)return;[L.panels[pi]
 function render(){renderPanels();renderTheme();renderSensors();renderCanvas();inspect();syncImage();fit()}
 function renderPanels(){$("panels").innerHTML=L.panels.map((p,i)=>`<button class="${i===pi?"active":""}" data-i="${i}">${i+1} ${p.name}</button>`).join("");$("panels").onclick=e=>{if(e.target.dataset.i!==undefined){pi=+e.target.dataset.i;ei=-1;render()}};$("panelName").value=P().name;$("duration").value=P().duration}
 function renderTheme(){$("theme").innerHTML=Object.entries(T).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join("");$("theme").value=L.theme}
-function renderSensors(){let q=$("search").value.toLowerCase();$("sensors").innerHTML=S.filter(x=>(x.name+x.id).toLowerCase().includes(q)).map(x=>`<div class=sensor data-id="${x.id}"><b>${x.name}</b><br><span class=muted>${x.value}</span></div>`).join("");$("sensors").onclick=e=>{let n=e.target.closest(".sensor");if(n){P().elements.push({type:"sensor",label:n.dataset.id,title:n.dataset.id,x:80,y:90,size:24,unit:"",align:"center",titleAlign:"left"});ei=P().elements.length-1;renderCanvas();inspect();save()}}}
+function renderSensors(){let q=$("search").value.toLowerCase();$("sensors").innerHTML=S.filter(x=>(x.name+x.id).toLowerCase().includes(q)).map(x=>`<div class=sensor data-id="${x.id}"><b>${x.name}</b><br><span class=muted>${x.value}</span></div>`).join("");$("sensors").onclick=e=>{let n=e.target.closest(".sensor");if(n){P().elements.push({type:"sensor",label:n.dataset.id,title:n.dataset.id,x:80,y:90,w:82,h:36,size:24,unit:"",align:"center",titleAlign:"left"});ei=P().elements.length-1;renderCanvas();inspect();save()}}}
 function renderCanvas(){
  let c=$("canvas"),t=TH(),m=P().image,bg=P().background,d=bg?IMG[bg]:null;
  c.style.backgroundColor=t.bg;c.style.backgroundImage=bg?`url('/user-images/${encodeURIComponent(bg)}')`:"none";
@@ -21,7 +21,8 @@ function renderCanvas(){
   c.style.backgroundSize="auto";c.style.backgroundPosition="0 0";
  }
  c.innerHTML=P().elements.map((z,i)=>html(z,i,t)).join("");
- c.querySelectorAll(".obj").forEach(n=>{n.onclick=e=>{e.stopPropagation();ei=+n.dataset.i;renderCanvas();inspect()};n.onmousedown=drag})
+ c.querySelectorAll(".obj").forEach(n=>{n.onclick=e=>{e.stopPropagation();ei=+n.dataset.i;renderCanvas();inspect()};n.onmousedown=drag});
+ addResizeHandles();
 }
 
 function lcdValue(z,val,native){
@@ -42,12 +43,97 @@ function lcdValue(z,val,native){
 
 function sensorBox(z){let size=Number(z.size)||24,w=Number(z.w)||Math.max(72,Math.round(size*3.4)),h=Number(z.h)||Math.max(34,Math.round(size*1.45));return{w,h};}
 function cssAlign(a){return a==="right"?"right":a==="left"?"left":"center";}
-function html(z,i,t){let s=`left:${z.x}px;top:${z.y}px;`,cl=`obj ${i===ei?"selected":""}`,a=C(z.accent),native=[0,2,3].includes(pi);if(z.type==="header"||z.type==="lcars_header")return`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;border-radius:22px;background:${a};color:#111;padding:12px 18px;font-weight:bold">${z.text}</div>`;if(z.type==="card")return`<div class="${cl} card" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px"><div class=cardhead style="background:${a}">${z.text}</div></div>`;if(z.type==="sensor"){let val=lcdValue(z,V[z.label]??"–",native),b=sensorBox(z),ta=cssAlign(z.titleAlign||"left"),va=cssAlign(z.align||"center");return`<div class="${cl} sensorobj" data-i="${i}" style="${s}width:${b.w}px;min-height:${b.h}px;font-size:${z.size}px;font-weight:${native?"700":"400"};color:${t.text}"><span class=label style="text-align:${ta}">${z.title||""}</span><div class=sensorval style="text-align:${va}">${val} ${z.unit||""}</div></div>`;}if(z.type==="bar"){if(native)return"";let n=parseFloat(V[z.label]||0),q=Math.max(0,Math.min(100,n/(z.max||100)*100));return`<div class="${cl} bar" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px"><div style="height:100%;width:${q}%;background:${a}"></div></div>`}if(z.type==="sparkline")return spark(z,i,a);if(z.type==="badge")return native?`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;color:${t.text};font-size:22px;font-weight:700;text-align:center">${V[z.label]??"–"}</div>`:`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;border:2px solid #66cc99;border-radius:18px;color:#66cc99;text-align:center;padding:6px">${V[z.label]??"–"}</div>`;if(z.type==="line")return`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;background:${a}"></div>`;if(z.type==="text")return`<div class="${cl}" data-i="${i}" style="${s}font-size:${z.size}px;color:${t.text}">${z.text}</div>`;return""}
+function html(z,i,t){let s=`left:${z.x}px;top:${z.y}px;`,cl=`obj ${i===ei?"selected":""}`,a=C(z.accent),native=[0,2,3].includes(pi);if(z.type==="header"||z.type==="lcars_header")return`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;border-radius:22px;background:${a};color:#111;padding:12px 18px;font-weight:bold">${z.text}</div>`;if(z.type==="card")return`<div class="${cl} card" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px"><div class=cardhead style="background:${a}">${z.text}</div></div>`;if(z.type==="sensor"){let val=lcdValue(z,V[z.label]??"–",native),b=sensorBox(z),ta=cssAlign(z.titleAlign||"left"),va=cssAlign(z.align||"center");return`<div class="${cl} sensorobj" data-i="${i}" style="${s}width:${b.w}px;height:${b.h}px;font-size:${z.size}px;font-weight:${native?"700":"400"};color:${t.text}"><span class=label style="text-align:${ta}">${z.title||""}</span><div class=sensorval style="text-align:${va}">${val} ${z.unit||""}</div></div>`;}if(z.type==="bar"){if(native)return"";let n=parseFloat(V[z.label]||0),q=Math.max(0,Math.min(100,n/(z.max||100)*100));return`<div class="${cl} bar" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px"><div style="height:100%;width:${q}%;background:${a}"></div></div>`}if(z.type==="sparkline")return spark(z,i,a);if(z.type==="badge")return native?`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;color:${t.text};font-size:22px;font-weight:700;text-align:center">${V[z.label]??"–"}</div>`:`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;border:2px solid #66cc99;border-radius:18px;color:#66cc99;text-align:center;padding:6px">${V[z.label]??"–"}</div>`;if(z.type==="line")return`<div class="${cl}" data-i="${i}" style="${s}width:${z.w}px;height:${z.h}px;background:${a}"></div>`;if(z.type==="text")return`<div class="${cl}" data-i="${i}" style="${s}font-size:${z.size}px;color:${t.text}">${z.text}</div>`;return""}
 function spark(z,i,a){let v=(H[z.label]||[]).slice(-60),w=z.w,h=z.h;if(v.length<2)return`<div class="obj ${i===ei?"selected":""}" data-i="${i}" style="left:${z.x}px;top:${z.y}px;width:${w}px;height:${h}px;border-bottom:2px solid ${a}"><span class=muted>Verlauf sammelt Daten…</span></div>`;let nums=v.map(x=>+x.value||+x),mx=z.max||Math.max(...nums,1),pts=nums.map((n,k)=>`${k/(nums.length-1)*w},${h-Math.max(0,Math.min(1,n/mx))*h}`).join(" "),area=`0,${h} ${pts} ${w},${h}`;return`<svg class="obj ${i===ei?"selected":""}" data-i="${i}" style="left:${z.x}px;top:${z.y}px" width="${w}" height="${h}"><polygon points="${area}" fill="${a}" class=sparkfill/><polyline points="${pts}" fill="none" stroke="${a}" stroke-width="3"/></svg>`}
-function inspect(){if(ei<0){$("inspector").textContent="Element auswählen.";return}let z=E();$("inspector").innerHTML=`<label>Typ<input value="${z.type}" disabled></label><label>Text/Titel<input id=it value="${z.text??z.title??""}"></label><div class=row><input id=ix type=number value="${z.x}"><input id=iy type=number value="${z.y}"></div><div class=row><input id=iw type=number value="${z.w||0}"><input id=ih type=number value="${z.h||0}"></div><select id=ia>${ACC.map(a=>`<option>${a}</option>`).join("")}</select>${z.type==="sensor"?`<label>Überschrift ausrichten<select id=ita><option value="left">LINKS</option><option value="center">MITTIG</option><option value="right">RECHTS</option></select></label><label>Wert ausrichten<select id=iva><option value="left">LINKS</option><option value="center">MITTIG</option><option value="right">RECHTS</option></select></label>`:""}<div><button id=front>VORNE</button><button id=back>HINTEN</button><button id=dup>DUPLIZIEREN</button><button id=del>LÖSCHEN</button></div>`;$("ia").value=z.accent||"orange";if(z.type==="sensor"){$("ita").value=z.titleAlign||"left";$("iva").value=z.align||"center";}["it","ix","iy","iw","ih","ia","ita","iva"].forEach(id=>{if($(id))$(id).onchange=apply});$("dup").onclick=()=>{let q=structuredClone(E());q.x+=10;q.y+=10;P().elements.push(q);ei=P().elements.length-1;renderCanvas();inspect();save()};$("del").onclick=()=>{P().elements.splice(ei,1);ei=-1;renderCanvas();inspect();save()};$("front").onclick=()=>layer(1);$("back").onclick=()=>layer(-1)}
-function apply(){let z=E();if(z.text!==undefined)z.text=$("it").value;if(z.title!==undefined)z.title=$("it").value;z.x=+$("ix").value;z.y=+$("iy").value;if(z.w!==undefined)z.w=+$("iw").value;if(z.h!==undefined)z.h=+$("ih").value;z.accent=$("ia").value;if(z.type==="sensor"){z.titleAlign=$("ita").value;z.align=$("iva").value;}renderCanvas();save()}
+function canResize(z){return z.type==="sensor"||["header","lcars_header","card","badge","bar","sparkline","line"].includes(z.type)}
+function effectiveWH(z){if(z.type==="sensor"){let b=sensorBox(z);return{w:b.w,h:b.h}}return{w:Number(z.w)||0,h:Number(z.h)||0}}
+function addResizeHandles(){
+ if(ei<0)return;
+ let n=$("canvas").querySelector(`.obj[data-i="${ei}"]`),z=E();
+ if(!n||!canResize(z))return;
+ ["nw","n","ne","e","se","s","sw","w"].forEach(d=>{
+   let h=document.createElement("span");h.className="resize-handle rh-"+d;h.dataset.dir=d;
+   h.onmousedown=resizeStart;n.appendChild(h);
+ });
+}
+function resizeStart(ev){
+ ev.preventDefault();ev.stopPropagation();
+ let z=E(),dir=ev.currentTarget.dataset.dir,b=effectiveWH(z),
+     sx=ev.clientX,sy=ev.clientY,ox=Number(z.x)||0,oy=Number(z.y)||0,ow=b.w,oh=b.h;
+ // Persist effective sensor defaults as soon as visual resizing starts.
+ if(z.w===undefined)z.w=ow;if(z.h===undefined)z.h=oh;
+ function mv(e){
+   let dx=(e.clientX-sx)/scale,dy=(e.clientY-sy)/scale,nx=ox,ny=oy,nw=ow,nh=oh;
+   if(dir.includes("e"))nw=SNAP(Math.max(24,ow+dx));
+   if(dir.includes("s"))nh=SNAP(Math.max(18,oh+dy));
+   if(dir.includes("w")){nx=SNAP(ox+dx);nw=SNAP(Math.max(24,ow-dx));if(nw===24)nx=ox+ow-24}
+   if(dir.includes("n")){ny=SNAP(oy+dy);nh=SNAP(Math.max(18,oh-dy));if(nh===18)ny=oy+oh-18}
+   z.x=nx;z.y=ny;z.w=nw;z.h=nh;renderCanvas();updateInspectorGeometry();
+ }
+ function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up);inspect();save()}
+ addEventListener("mousemove",mv);addEventListener("mouseup",up);
+}
+function field(label,id,value,attrs=""){return`<label class=prop-field><span>${label}</span><input id="${id}" value="${value??""}" ${attrs}></label>`}
+function selectField(label,id,options,value){return`<label class=prop-field><span>${label}</span><select id="${id}">${options.map(([v,n])=>`<option value="${v}" ${v===value?"selected":""}>${n}</option>`).join("")}</select></label>`}
+function group(title,body){return`<div class=prop-group><div class=prop-title>${title}</div>${body}</div>`}
+function inspect(){
+ if(ei<0){$("inspector").innerHTML='<div class="prop-empty">Element auswählen.</div>';return}
+ let z=E(),b=effectiveWH(z),res=canResize(z),htmls="";
+ htmls+=group("ELEMENT",
+   field("Typ","itype",z.type,"disabled")+
+   field(z.type==="sensor"?"Überschrift":"Text / Titel","it",z.text??z.title??"")
+ );
+ htmls+=group("POSITION & GRÖSSE",
+   '<div class=prop-grid4>'+
+   field("X","ix",z.x,'type="number"')+
+   field("Y","iy",z.y,'type="number"')+
+   field("Breite","iw",res?b.w:0,`type="number" min="24" ${res?"":"disabled"}`)+
+   field("Höhe","ih",res?b.h:0,`type="number" min="18" ${res?"":"disabled"}`)+
+   '</div>'+
+   (res?'<div class=prop-hint>Größe auch direkt im Editor an den Griffen ändern.</div>':"")
+ );
+ let textProps="";
+ if(z.type==="sensor"||z.type==="text"){
+   textProps+=field("Schriftgröße","isz",Number(z.size)||24,'type="number" min="8" max="96" step="1"');
+ }
+ if(z.type==="sensor"){
+   textProps+=selectField("Überschrift ausrichten","ita",[["left","LINKS"],["center","MITTIG"],["right","RECHTS"]],z.titleAlign||"left");
+   textProps+=selectField("Wert ausrichten","iva",[["left","LINKS"],["center","MITTIG"],["right","RECHTS"]],z.align||"center");
+ }
+ if(textProps)htmls+=group("TEXT",textProps);
+ htmls+=group("DARSTELLUNG",selectField("Akzentfarbe","ia",ACC.map(a=>[a,a.toUpperCase()]),z.accent||"orange"));
+ htmls+=group("ANORDNUNG",'<div class=prop-actions><button id=front>VORNE</button><button id=back>HINTEN</button><button id=dup>DUPLIZIEREN</button><button id=del>LÖSCHEN</button></div>');
+ $("inspector").innerHTML=htmls;
+ ["it","ix","iy","iw","ih","isz","ia","ita","iva"].forEach(id=>{if($(id)){$(id).onchange=apply;$(id).oninput=(id==="ix"||id==="iy"||id==="iw"||id==="ih"||id==="isz")?apply:null}});
+ $("dup").onclick=()=>{let q=structuredClone(E());q.x+=10;q.y+=10;P().elements.push(q);ei=P().elements.length-1;renderCanvas();inspect();save()};
+ $("del").onclick=()=>{P().elements.splice(ei,1);ei=-1;renderCanvas();inspect();save()};
+ $("front").onclick=()=>layer(1);$("back").onclick=()=>layer(-1)
+}
+function updateInspectorGeometry(){
+ let z=E(),b=effectiveWH(z);
+ if($("ix"))$("ix").value=Math.round(z.x);if($("iy"))$("iy").value=Math.round(z.y);
+ if($("iw"))$("iw").value=Math.round(b.w);if($("ih"))$("ih").value=Math.round(b.h);
+}
+function apply(){
+ let z=E();
+ if(z.text!==undefined&&$("it"))z.text=$("it").value;
+ if(z.title!==undefined&&$("it"))z.title=$("it").value;
+ if($("ix"))z.x=+$("ix").value;if($("iy"))z.y=+$("iy").value;
+ if(canResize(z)){if($("iw"))z.w=Math.max(24,+$("iw").value||24);if($("ih"))z.h=Math.max(18,+$("ih").value||18)}
+ if($("isz")&&(z.type==="sensor"||z.type==="text"))z.size=Math.max(8,Math.min(96,+$("isz").value||24));
+ if($("ia"))z.accent=$("ia").value;
+ if(z.type==="sensor"){if($("ita"))z.titleAlign=$("ita").value;if($("iva"))z.align=$("iva").value}
+ renderCanvas();save()
+}
 function layer(d){let a=P().elements,n=ei+d;if(n<0||n>=a.length)return;[a[ei],a[n]]=[a[n],a[ei]];ei=n;renderCanvas();inspect();save()}
-function drag(ev){if(imageMode)return;ev.preventDefault();ei=+ev.currentTarget.dataset.i;let z=E(),sx=ev.clientX,sy=ev.clientY,ox=z.x,oy=z.y;function mv(e){z.x=SNAP(ox+(e.clientX-sx)/scale);z.y=SNAP(oy+(e.clientY-sy)/scale);renderCanvas()}function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up);inspect();save()}addEventListener("mousemove",mv);addEventListener("mouseup",up)}
+function drag(ev){
+ if(imageMode||ev.target.classList.contains("resize-handle"))return;
+ ev.preventDefault();ei=+ev.currentTarget.dataset.i;
+ let z=E(),sx=ev.clientX,sy=ev.clientY,ox=z.x,oy=z.y;
+ function mv(e){z.x=SNAP(ox+(e.clientX-sx)/scale);z.y=SNAP(oy+(e.clientY-sy)/scale);renderCanvas();updateInspectorGeometry()}
+ function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up);inspect();save()}
+ addEventListener("mousemove",mv);addEventListener("mouseup",up)
+}
 function bgDrag(ev){if(!imageMode)return;let m=P().image,sx=ev.clientX,sy=ev.clientY,ox=m.x,oy=m.y;function mv(e){m.x=Math.round(ox+(e.clientX-sx)/scale);m.y=Math.round(oy+(e.clientY-sy)/scale);syncImage();renderCanvas()}function up(){removeEventListener("mousemove",mv);removeEventListener("mouseup",up);save()}addEventListener("mousemove",mv);addEventListener("mouseup",up)}
 function keys(e){if(ei<0||["INPUT","SELECT"].includes(document.activeElement.tagName))return;let d=e.shiftKey?10:1;if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)){e.preventDefault();let z=E();if(e.key==="ArrowLeft")z.x-=d;if(e.key==="ArrowRight")z.x+=d;if(e.key==="ArrowUp")z.y-=d;if(e.key==="ArrowDown")z.y+=d;renderCanvas();inspect();save()}if(e.key==="Delete")$("del")?.click()}
 function imageProps(){let m=P().image;m.mode=$("fit").value;m.zoom=+$("zoom").value;m.x=+$("imgX").value;m.y=+$("imgY").value;renderCanvas();save()}function syncImage(){let m=P().image;$("fit").value=m.mode;$("zoom").value=m.zoom;$("imgX").value=m.x;$("imgY").value=m.y}

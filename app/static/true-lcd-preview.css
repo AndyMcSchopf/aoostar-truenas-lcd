@@ -14,3 +14,16 @@
 #lcdInlinePreview .lip-stage{min-height:210px}
 
 #lcd-preview-slot{grid-column:2;min-width:0;width:100%;align-self:start}#lcd-preview-slot #lcdInlinePreview{width:100%!important;max-width:none!important;margin:16px 0 24px!important}
+
+/* v0.8.3.3: preview belongs to center column flow, not a second grid row */
+#lcd-preview-slot{
+  display:block;
+  width:100%;
+  min-width:0;
+  margin:14px 0 24px;
+}
+#lcd-preview-slot #lcdInlinePreview{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+}

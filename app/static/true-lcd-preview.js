@@ -7,3 +7,20 @@ function idx(){let t="";document.querySelectorAll("select").forEach(e=>{if(e.opt
 async function load(){make();if(!document.getElementById("lipImg"))return;try{let r=await fetch("/api/lcd/preview"),d=await r.json(),a=d.images||[];if(!a.length)return;let i=Math.min(idx(),a.length-1),x=a[i];lipImg.src=x.url;lipImg.style.display="block";lipEmpty.style.display="none";lipName.textContent="· "+(x.panelName||("Panel "+(i+1)))}catch(_){}}
 function dirty(){if(document.getElementById("lipState")){lipState.className="lip-state stale";lipState.textContent="⚠ Vorschau entspricht möglicherweise nicht den aktuellen Änderungen."}}
 document.addEventListener("input",e=>{if(!e.target.closest("#lcdInlinePreview,#lcdpo"))dirty()},true);document.addEventListener("change",e=>{if(!e.target.closest("#lcdInlinePreview,#lcdpo")){dirty();setTimeout(load,50)}},true);document.addEventListener("click",e=>{if(/SYSTEM|SPEICHER|ZFS|TRUENAS|BILD/i.test(e.target.textContent||""))setTimeout(load,80)},true);new MutationObserver(()=>{make()}).observe(document.documentElement,{childList:true,subtree:true});document.addEventListener("DOMContentLoaded",()=>{make();load()});setInterval(load,3000)})();
+;(()=>{
+"use strict";
+function fixImageDeleteLabels(){
+  const builder=[...document.querySelectorAll("h1,h2,h3,strong,b,div")].find(e=>(e.textContent||"").trim()==="BILDER");
+  if(!builder)return;
+  let box=builder.parentElement;
+  while(box && box.parentElement && box.getBoundingClientRect().width<180)box=box.parentElement;
+  if(!box)return;
+  box.querySelectorAll("button").forEach(b=>{
+    const t=(b.textContent||"").trim();
+    if(t==="Ã—" || t==="Â×" || t==="×" || t==="Ã—"){b.textContent="LÖSCHEN";b.title="Bild löschen";}
+  });
+}
+new MutationObserver(fixImageDeleteLabels).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",fixImageDeleteLabels);
+setTimeout(fixImageDeleteLabels,250);
+})();

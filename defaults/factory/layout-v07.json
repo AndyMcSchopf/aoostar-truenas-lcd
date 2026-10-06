@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 5,
+  "appVersion": "0.8.5.2",
+  "theme": "lcars-orange",
+  "switchTime": 6,
+  "panels": [
+    {
+      "name": "SYSTEM",
+      "background": "",
+      "image": {
+        "mode": "cover",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      },
+      "elements": [
+        {
+          "type": "header",
+          "text": "TrueNAS Scale / TrueSTARMax",
+          "x": 18,
+          "y": 14,
+          "w": 924,
+          "h": 42,
+          "accent": "orange"
+        },
+        {
+          "type": "card",
+          "text": "CPU",
+          "x": 28,
+          "y": 72,
+          "w": 280,
+          "h": 226,
+          "accent": "orange"
+        },
+        {
+          "type": "sensor",
+          "label": "cpu_usage_percent",
+          "title": "",
+          "x": 48,
+          "y": 108,
+          "size": 36,
+          "unit": "%"
+        },
+        {
+          "type": "sensor",
+          "label": "temperature_cpu",
+          "title": "",
+          "x": 190,
+          "y": 111,
+          "size": 30,
+          "unit": "C"
+        },
+        {
+          "type": "bar",
+          "label": "cpu_usage_percent",
+          "x": 48,
+          "y": 157,
+          "w": 235,
+          "h": 12,
+          "max": 100,
+          "accent": "orange"
+        },
+        {
+          "type": "sparkline",
+          "label": "cpu_usage_percent",
+          "x": 48,
+          "y": 188,
+          "w": 235,
+          "h": 82,
+          "auto": true,
+          "accent": "orange"
+        },
+        {
+          "type": "card",
+          "text": "RAM",
+          "x": 330,
+          "y": 72,
+          "w": 280,
+          "h": 226,
+          "accent": "violet"
+        },
+        {
+          "type": "sensor",
+          "label": "mem_usage_percent",
+          "title": "",
+          "x": 350,
+          "y": 108,
+          "size": 36,
+          "unit": "%"
+        },
+        {
+          "type": "sensor",
+          "label": "temperature_memory",
+          "title": "",
+          "x": 492,
+          "y": 111,
+          "size": 30,
+          "unit": "C"
+        },
+        {
+          "type": "bar",
+          "label": "mem_usage_percent",
+          "x": 350,
+          "y": 157,
+          "w": 235,
+          "h": 12,
+          "max": 100,
+          "accent": "violet"
+        },
+        {
+          "type": "sparkline",
+          "label": "mem_usage_percent",
+          "x": 350,
+          "y": 188,
+          "w": 235,
+          "h": 82,
+          "max": 100,
+          "accent": "violet"
+        },
+        {
+          "type": "card",
+          "text": "NETZWERK",
+          "x": 632,
+          "y": 72,
+          "w": 300,
+          "h": 150,
+          "accent": "blue"
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_net_down",
+          "title": "DOWN",
+          "x": 650,
+          "y": 112,
+          "size": 27,
+          "unit": ""
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_net_up",
+          "title": "UP",
+          "x": 790,
+          "y": 112,
+          "size": 27,
+          "unit": ""
+        },
+        {
+          "type": "sparkline",
+          "label": "truenas_net_down_bytes_sec",
+          "x": 650,
+          "y": 158,
+          "w": 258,
+          "h": 45,
+          "auto": true,
+          "accent": "blue"
+        },
+        {
+          "type": "card",
+          "text": "STATUS",
+          "x": 632,
+          "y": 236,
+          "w": 300,
+          "h": 94,
+          "accent": "amber"
+        },
+        {
+          "type": "badge",
+          "label": "truenas_system_status",
+          "x": 650,
+          "y": 273,
+          "w": 105,
+          "h": 34
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_uptime",
+          "title": "",
+          "x": 775,
+          "y": 274,
+          "size": 20,
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "name": "SPEICHER/ZFS",
+      "background": "",
+      "image": {
+        "mode": "cover",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      },
+      "elements": [
+        {
+          "type": "header",
+          "text": "SPEICHER / ZFS 02",
+          "x": 18,
+          "y": 14,
+          "w": 924,
+          "h": 42,
+          "accent": "amber"
+        },
+        {
+          "type": "pool",
+          "index": 0,
+          "x": 28,
+          "y": 72,
+          "w": 440,
+          "h": 126,
+          "accent": "orange"
+        },
+        {
+          "type": "pool",
+          "index": 1,
+          "x": 492,
+          "y": 72,
+          "w": 440,
+          "h": 126,
+          "accent": "blue"
+        },
+        {
+          "type": "pool",
+          "index": 2,
+          "x": 28,
+          "y": 218,
+          "w": 440,
+          "h": 126,
+          "accent": "violet"
+        },
+        {
+          "type": "pool",
+          "index": 3,
+          "x": 492,
+          "y": 218,
+          "w": 440,
+          "h": 126,
+          "accent": "pink"
+        }
+      ]
+    },
+    {
+      "name": "TRUENAS",
+      "background": "",
+      "image": {
+        "mode": "cover",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      },
+      "elements": [
+        {
+          "type": "header",
+          "text": "TRUENAS CORE SERVICES 03",
+          "x": 18,
+          "y": 14,
+          "w": 924,
+          "h": 42,
+          "accent": "orange"
+        },
+        {
+          "type": "card",
+          "text": "APPS",
+          "x": 28,
+          "y": 72,
+          "w": 300,
+          "h": 230,
+          "accent": "violet"
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_apps_running",
+          "title": "AKTIV",
+          "x": 48,
+          "y": 118,
+          "size": 34,
+          "unit": ""
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_apps_stopped",
+          "title": "STOPP",
+          "x": 185,
+          "y": 118,
+          "size": 30,
+          "unit": ""
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_apps_updates",
+          "title": "UPDATES",
+          "x": 48,
+          "y": 205,
+          "size": 32,
+          "unit": ""
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_apps_crashed",
+          "title": "FEHLER",
+          "x": 185,
+          "y": 205,
+          "size": 30,
+          "unit": ""
+        },
+        {
+          "type": "card",
+          "text": "ZFS / SYSTEM",
+          "x": 350,
+          "y": 72,
+          "w": 582,
+          "h": 230,
+          "accent": "orange"
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_pools_healthy_de",
+          "title": "POOLS",
+          "x": 375,
+          "y": 122,
+          "size": 31,
+          "unit": ""
+        },
+        {
+          "type": "badge",
+          "label": "truenas_system_status",
+          "x": 785,
+          "y": 105,
+          "w": 120,
+          "h": 36
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_version",
+          "title": "VERSION",
+          "x": 375,
+          "y": 218,
+          "size": 23,
+          "unit": ""
+        },
+        {
+          "type": "sensor",
+          "label": "truenas_uptime",
+          "title": "UPTIME",
+          "x": 650,
+          "y": 218,
+          "size": 22,
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "name": "BILD",
+      "background": "",
+      "image": {
+        "mode": "cover",
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      },
+      "elements": [
+        {
+          "type": "header",
+          "text": "TrueSTARMax / ELF",
+          "x": 18,
+          "y": 14,
+          "w": 924,
+          "h": 42,
+          "accent": "violet"
+        },
+        {
+          "type": "card",
+          "text": "INFO",
+          "x": 28,
+          "y": 72,
+          "w": 300,
+          "h": 126,
+          "accent": "violet"
+        },
+        {
+          "type": "text",
+          "text": "An Elf is watching...",
+          "x": 48,
+          "y": 116,
+          "size": 24,
+          "accent": "orange"
+        },
+        {
+          "type": "sparkline",
+          "label": "cpu_usage_percent",
+          "x": 48,
+          "y": 160,
+          "w": 235,
+          "h": 28,
+          "auto": true,
+          "accent": "orange"
+        },
+        {
+          "type": "sensor",
+          "label": "temperature_cpu",
+          "title": "CPU",
+          "x": 760,
+          "y": 286,
+          "size": 24,
+          "unit": "C"
+        },
+        {
+          "type": "badge",
+          "label": "truenas_system_status",
+          "x": 860,
+          "y": 286,
+          "w": 72,
+          "h": 34
+        }
+      ]
+    }
+  ]
+}

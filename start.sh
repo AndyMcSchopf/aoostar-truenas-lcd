@@ -17,6 +17,7 @@ echo "===================================================="
 RUNTIME=/run/aoostar
 CFG=/app/cfg
 mkdir -p "$RUNTIME" "$CFG/sensors" "$CFG/images" "$CFG/backups"
+python3 /app/factory_bootstrap.py || exit 1
 
 ( while true; do aster-sysinfo --refresh 5 --out "$RUNTIME/hardware.txt"; echo "[manager] aster-sysinfo restart" >&2; sleep 5; done ) & SYS_PID=$!
 export TRUENAS_SENSOR_OUT="$RUNTIME/truenas.txt"

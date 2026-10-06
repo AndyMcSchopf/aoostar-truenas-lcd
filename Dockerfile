@@ -19,6 +19,8 @@ COPY --from=builder /build/aoostar-rs/fonts /app/fonts
 COPY truenas-sensors.py lcd_generator.py start.sh /app/
 COPY VERSION /app/VERSION
 COPY app/webui.py app/history.py app/render_shared.py /app/
+COPY app/factory_bootstrap.py /app/factory_bootstrap.py
+COPY defaults/factory /defaults/factory
 COPY app/templates /app/templates
 COPY app/static /app/static
 

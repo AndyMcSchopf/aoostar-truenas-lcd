@@ -44,36 +44,38 @@ def textbox(e, native=False):
         w = int(e.get("w", 0) or 0); h = int(e.get("h", 0) or 0); align = "center"
     return x, y, w, h, align
 
+def label_metrics(e):
+    title = str(e.get("title", "")).strip()
+    size = int(e.get("size", 24))
+    label_size = max(15, min(18, int(size * 0.48)))
+    gap = 4
+    return title, label_size, gap
+
 def sensor_json(e, native=False):
     x, y, w, h, align = textbox(e, native)
-    source_label = e.get("label", "")
-    label = source_label
-    if native and source_label in ("truenas_net_down", "truenas_net_up"):
-        y += 19
+    label = e.get("label", "")
+    title, label_size, gap = label_metrics(e)
+    if native and title:
+        # Universal contract: editor x/y is the top of label+value block.
+        # asterctl renders only the live value, so move it below the static label.
+        y += label_size + gap
+        h = max(24, h - label_size - gap)
     if native and label == "truenas_uptime": label = "truenas_uptime_short"
     return {
         "decimalDigits": int(e.get("decimalDigits", -1)), "direction": 1, "fontColor": e.get("fontColor", -1),
         "fontFamily": "HarmonyOS_Sans_SC_Bold", "fontSize": int(e.get("size", 24)),
         "fontWeight": "bold", "height": h, "integerDigits": int(e.get("integerDigits", -1)),
         "label": label, "maxAngle": 180, "maxValue": 100, "minAngle": 0, "minValue": 0,
-        "mode": 1, "name": e.get("title", ""), "pic": "", "textAlign": align,
+        "mode": 1, "name": "", "pic": "", "textAlign": align,
         "textDirection": 0, "type": 1, "unit": e.get("unit", ""), "value": "",
         "width": w, "x": x, "xz_x": 0, "xz_y": 0, "y": y
     }
 
 def draw_static_label(d, e):
-    title = str(e.get("title", "")).strip()
+    title, label_size, gap = label_metrics(e)
     if not title: return
     x, y = int(e.get("x", 0)), int(e.get("y", 0))
-    label_size = max(15, min(18, int(e.get("size", 24) * 0.48)))
-    # Network labels are special: editor places DOWN/UP below the blue header.
-    # Keep the same semantic placement on the LCD instead of drawing them above
-    # the live-value origin (which put them inside the header).
-    if e.get("label") in ("truenas_net_down", "truenas_net_up"):
-        ly = y
-    else:
-        ly = max(0, y - label_size - 4)
-    d.text((x, ly), title, font=font(label_size), fill=rgb(T["muted"]))
+    d.text((x, y), title, font=font(label_size), fill=rgb(T["muted"]))
 
 def panel(p, i, values, history):
     im = Image.new("RGBA", (W, H), rgb(T["bg"]) + (255,))
@@ -92,7 +94,12 @@ def panel(p, i, values, history):
         if q == "header":
             d.rounded_rectangle((x,y,x+w,y+hh), radius=min(20,max(1,hh//2)), fill=rgb(a)); d.text((x+16,y+8),e.get("text",""),font=font(17),fill=(10,10,10))
         elif q == "card":
-            d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"])); d.rectangle((x,y,x+w,y+30),fill=rgb(a)); d.text((x+14,y+5),e.get("text",""),font=font(15),fill=(10,10,10))
+            radius = min(20, max(1, hh // 2))
+            d.rounded_rectangle((x,y,x+w,y+hh),radius=radius,fill=rgb(T["panel"]))
+            # Rounded top corners, square lower edge: same visual contract as editor cardhead.
+            d.rounded_rectangle((x,y,x+w,y+30),radius=min(radius,15),fill=rgb(a))
+            d.rectangle((x,y+15,x+w,y+30),fill=rgb(a))
+            d.text((x+14,y+5),e.get("text",""),font=font(15),fill=(10,10,10))
         elif q == "pool":
             n=int(e.get("index",0)); k=f"truenas_pool_{n}_"; pct=float(values.get(k+"used_percent",0) or 0); col="#CC6666" if pct>=90 else "#FFCC66" if pct>=75 else a
             d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"])); d.rectangle((x,y,x+w,y+30),fill=rgb(col)); d.text((x+14,y+5),f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}',font=font(13),fill=(10,10,10)); d.text((x+18,y+42),f"{pct:.0f}%",font=font(25),fill=rgb(T["text"])); d.text((x+100,y+49),f'{values.get(k+"used","")} / {values.get(k+"size","")}',font=font(12),fill=rgb(T["muted"])); d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57)); d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
@@ -112,7 +119,7 @@ def build():
         sensors = [sensor_json(e, native) for e in elements if e.get("type") in (("sensor","badge") if native else ("sensor",))]
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.4.2","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
+    return {"ok":True,"version":"0.8.4.3","nativePanels":["SYSTEM","TRUENAS","BILD"],"panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

@@ -21,6 +21,7 @@ COPY VERSION /app/VERSION
 COPY app/webui.py app/history.py app/render_shared.py /app/
 COPY app/roundtrip_selftest.py /app/roundtrip_selftest.py
 COPY app/v089_selftest.py /app/v089_selftest.py
+COPY app/v0891_selftest.py /app/v0891_selftest.py
 COPY app/data_binding_selftest.py /app/data_binding_selftest.py
 COPY app/title_alignment_selftest.py /app/title_alignment_selftest.py
 COPY app/factory_bootstrap.py /app/factory_bootstrap.py
@@ -32,6 +33,7 @@ RUN chmod +x /app/start.sh
 RUN python3 -m py_compile /app/webui.py /app/history.py /app/truenas-sensors.py /app/lcd_generator.py /app/render_shared.py /app/roundtrip_selftest.py
 RUN python3 /app/roundtrip_selftest.py
 RUN python3 /app/v089_selftest.py
+RUN python3 /app/v0891_selftest.py
 RUN python3 /app/data_binding_selftest.py
 RUN python3 /app/title_alignment_selftest.py
 RUN bash -n /app/start.sh

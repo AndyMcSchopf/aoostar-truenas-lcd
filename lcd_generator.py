@@ -153,8 +153,9 @@ def status_sensors(e):
     if detail:
         d=dict(e); d["label"]=detail; d["title"]=""; d["unit"]=""
         d["size"]=int(e.get("detailSize",12)); d["align"]=e.get("align","center")
-        d["y"]=int(e.get("y",0))+int(e.get("size",22))+8
-        d["h"]=max(18,int(e.get("h",62))-int(e.get("size",22))-8)
+        gap=int(e.get("detailGap",6))
+        d["y"]=int(e.get("y",0))+int(e.get("size",22))+gap
+        d["h"]=max(18,int(e.get("h",62))-int(e.get("size",22))-gap)
         out.append(sensor_json(d, True))
     return out
 

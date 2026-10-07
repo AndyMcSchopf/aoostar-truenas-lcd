@@ -119,7 +119,20 @@ def panel(p, i, values, history):
             d.text((x+14,y+5),e.get("text",""),font=font(int(e.get("size",15))),fill=text_rgb(e.get("textColor","auto")))
         elif q == "pool":
             n=int(e.get("index",0)); k=f"truenas_pool_{n}_"; pct=float(values.get(k+"used_percent",0) or 0); col="#CC6666" if pct>=90 else "#FFCC66" if pct>=75 else a
-            d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"])); d.rectangle((x,y,x+w,y+30),fill=rgb(col)); d.text((x+14,y+5),f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}',font=font(13),fill=(10,10,10)); d.text((x+18,y+42),f"{pct:.0f}%",font=font(25),fill=rgb(T["text"])); d.text((x+100,y+49),f'{values.get(k+"used","")} / {values.get(k+"size","")}',font=font(12),fill=text_rgb(e.get("titleColor","muted"),"muted")); d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57)); d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
+            name_size=int(e.get("nameSize",15)); pct_size=int(e.get("percentSize",25)); cap_size=int(e.get("capacitySize",18)); fmt=e.get("capacityFormat","compact")
+            used=str(values.get(k+"used","")); total=str(values.get(k+"size","")); free=str(values.get(k+"free",""))
+            if fmt=="full": cap=f"{used} / {total}"
+            elif fmt=="usedfree": cap=f"BELEGT {used}  FREI {free}"
+            else:
+                short_used=re.sub(r"\s+(TiB|GiB|MiB)$","",used)
+                cap=f"{short_used} / {total}"
+            d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"]))
+            d.rectangle((x,y,x+w,y+30),fill=rgb(col))
+            d.text((x+14,y+5),f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}',font=font(name_size),fill=(10,10,10))
+            d.text((x+18,y+42),f"{pct:.0f}%",font=font(pct_size),fill=rgb(T["text"]))
+            d.text((x+100,y+49),cap,font=font(cap_size),fill=text_rgb(e.get("titleColor","muted"),"muted"))
+            d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57))
+            d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
         elif q == "bar":
             try: value=float(values.get(e.get("label"),0) or 0)
             except Exception: value=0

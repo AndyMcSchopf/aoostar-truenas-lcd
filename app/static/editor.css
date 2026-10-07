@@ -36,3 +36,11 @@
 /* v0.8.8 data binding + status */
 .statusobj{box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
 .statusmain{line-height:1.05}.statusdetail{font-weight:400;line-height:1.15;margin-top:4px;opacity:.9}
+
+/* v0.8.9 responsive status + editable pools */
+.statusdetail{white-space:normal;overflow-wrap:anywhere;word-break:normal;max-width:100%;box-sizing:border-box}
+.poolobj{position:absolute;box-sizing:border-box}
+.poolpct{position:absolute;left:18px;top:40px;font-weight:700}
+.poolcap{position:absolute;left:100px;top:47px;color:#afa7a0}
+.poolbar{position:absolute;left:18px;right:18px;top:88px;height:11px;border-radius:6px;background:#2d3139;overflow:hidden}
+.poolbar>div{height:100%;border-radius:6px}

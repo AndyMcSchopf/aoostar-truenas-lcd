@@ -33,6 +33,14 @@ def readvals():
                 k, v = line.split(":", 1); out[k.strip()] = v.strip()
     return out
 
+def numeric(value, default=0.0):
+    """Match browser parseFloat semantics for sensor strings with units/commas."""
+    if isinstance(value, (int, float)): return float(value)
+    s=str(value or "").strip().replace(",", ".")
+    m=re.match(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)", s)
+    try: return float(m.group(0)) if m else float(default)
+    except Exception: return float(default)
+
 def hist():
     try: return json.loads((C / "history.json").read_text())
     except Exception: return {}
@@ -135,28 +143,25 @@ def panel(p, i, values, history):
             d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57))
             d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
         elif q == "bar":
-            try: value=float(values.get(e.get("label"),0) or 0)
-            except Exception: value=0
-            minimum=float(e.get("min",0) or 0); maximum=float(e.get("max",100) or 100); pct=max(0.0,min(1.0,(value-minimum)/max(0.000001,maximum-minimum)))
+            value=numeric(values.get(e.get("label"),0),0)
+            minimum=numeric(e.get("min",0),0); maximum=numeric(e.get("max",100),100); pct=max(0.0,min(1.0,(value-minimum)/max(0.000001,maximum-minimum)))
             d.rounded_rectangle((x,y,x+w,y+hh),radius=max(1,min(hh//2,6)),fill=(45,49,57))
             if pct>0: d.rounded_rectangle((x,y,x+round(w*pct),y+hh),radius=max(1,min(hh//2,6)),fill=rgb(a))
-        elif q == "sparkline": spark(im,(x,y,w,hh),history.get(e.get("label"),[]),a,e.get("max"))
+        elif q == "sparkline": spark(im,(x,y,w,hh),history.get(e.get("label"),[]),a,e.get("max"),e.get("min",0))
         elif q == "text": d.text((x,y),e.get("text",""),font=font(int(e.get("size",24))),fill=text_rgb(e.get("textColor","auto")))
         elif q in ("sensor", "badge"):
             draw_static_label(d, e)
     fn = f"panel_{i+1}.png"; im.convert("RGB").save(G / fn); return fn
 
 def status_sensors(e):
-    main=dict(e); main["title"]=""; main["unit"]=""
-    main["size"]=int(e.get("size",22)); main["align"]=e.get("align","center")
+    y=int(e.get("y",0)); total_h=int(e.get("h",62)); status_size=int(e.get("size",22)); detail_size=int(e.get("detailSize",12)); gap=int(e.get("detailGap",6))
+    main_h=max(18, round(status_size*1.35)); detail_h=max(18, round(detail_size*1.35))
+    main=dict(e); main["title"]=""; main["unit"]=""; main["size"]=status_size; main["align"]=e.get("align","center"); main["y"]=y; main["h"]=min(total_h,main_h)
     out=[sensor_json(main, True)]
     detail=e.get("detailLabel","")
     if detail:
-        d=dict(e); d["label"]=detail; d["title"]=""; d["unit"]=""
-        d["size"]=int(e.get("detailSize",12)); d["align"]=e.get("align","center")
-        gap=int(e.get("detailGap",6))
-        d["y"]=int(e.get("y",0))+int(e.get("size",22))+gap
-        d["h"]=max(18,int(e.get("h",62))-int(e.get("size",22))-gap)
+        detail_y=y+main_h+gap; remaining=max(18,total_h-main_h-gap)
+        d=dict(e); d["label"]=detail; d["title"]=""; d["unit"]=""; d["size"]=detail_size; d["align"]=e.get("align","center"); d["y"]=detail_y; d["h"]=min(remaining,detail_h)
         out.append(sensor_json(d, True))
     return out
 
@@ -173,7 +178,7 @@ def build():
             elif e.get("type")=="badge": sensors.extend(status_sensors(e))
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.8","panels":len(diy)}
+    return {"ok":True,"version":"0.8.10","panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

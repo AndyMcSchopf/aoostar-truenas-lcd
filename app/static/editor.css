@@ -32,3 +32,7 @@
 
 /* v0.8.5.4 typography controls */
 .prop-group select{font-size:12px}
+
+/* v0.8.8 data binding + status */
+.statusobj{box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.statusmain{line-height:1.05}.statusdetail{font-weight:400;line-height:1.15;margin-top:4px;opacity:.9}

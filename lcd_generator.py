@@ -123,7 +123,7 @@ def panel(p, i, values, history):
         elif q == "bar":
             try: value=float(values.get(e.get("label"),0) or 0)
             except Exception: value=0
-            maximum=float(e.get("max",100) or 100); pct=max(0.0,min(1.0,value/maximum if maximum else 0.0))
+            minimum=float(e.get("min",0) or 0); maximum=float(e.get("max",100) or 100); pct=max(0.0,min(1.0,(value-minimum)/max(0.000001,maximum-minimum)))
             d.rounded_rectangle((x,y,x+w,y+hh),radius=max(1,min(hh//2,6)),fill=(45,49,57))
             if pct>0: d.rounded_rectangle((x,y,x+round(w*pct),y+hh),radius=max(1,min(hh//2,6)),fill=rgb(a))
         elif q == "sparkline": spark(im,(x,y,w,hh),history.get(e.get("label"),[]),a,e.get("max"))
@@ -132,6 +132,19 @@ def panel(p, i, values, history):
             draw_static_label(d, e)
     fn = f"panel_{i+1}.png"; im.convert("RGB").save(G / fn); return fn
 
+def status_sensors(e):
+    main=dict(e); main["title"]=""; main["unit"]=""
+    main["size"]=int(e.get("size",22)); main["align"]=e.get("align","center")
+    out=[sensor_json(main, True)]
+    detail=e.get("detailLabel","")
+    if detail:
+        d=dict(e); d["label"]=detail; d["title"]=""; d["unit"]=""
+        d["size"]=int(e.get("detailSize",12)); d["align"]=e.get("align","center")
+        d["y"]=int(e.get("y",0))+int(e.get("size",22))+8
+        d["h"]=max(18,int(e.get("h",62))-int(e.get("size",22))-8)
+        out.append(sensor_json(d, True))
+    return out
+
 def build():
     clean_generated()
     layout = json.loads((C / "layout-v07.json").read_text()); values = readvals(); history = hist(); diy = []
@@ -139,10 +152,13 @@ def build():
         fn = panel(p, i, values, history)
         elements = p.get("elements", [])
         native = any(e.get("type") in ("sensor", "badge") for e in elements)
-        sensors = [sensor_json(e, True) for e in elements if e.get("type") in ("sensor", "badge")]
+        sensors = []
+        for e in elements:
+            if e.get("type")=="sensor": sensors.append(sensor_json(e, True))
+            elif e.get("type")=="badge": sensors.extend(status_sensors(e))
         diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.7","panels":len(diy)}
+    return {"ok":True,"version":"0.8.8","panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

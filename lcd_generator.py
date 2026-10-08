@@ -136,10 +136,14 @@ def panel(p, i, values, history):
                 short_used=re.sub(r"\s+(TiB|GiB|MiB)$","",used)
                 cap=f"{short_used} / {total}"
             d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"]))
-            d.rectangle((x,y,x+w,y+30),fill=rgb(col))
+            d.rounded_rectangle((x,y,x+w,y+30),radius=15,fill=rgb(col))
+            d.rectangle((x,y+15,x+w,y+30),fill=rgb(col))
             d.text((x+14,y+5),f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}',font=font(name_size),fill=(10,10,10))
-            d.text((x+18,y+42),f"{pct:.0f}%",font=font(pct_size),fill=rgb(T["text"]))
-            d.text((x+100,y+49),cap,font=font(cap_size),fill=text_rgb(e.get("titleColor","muted"),"muted"))
+            pct_text=f"{pct:.0f}%"
+            pct_bbox=d.textbbox((0,0),pct_text,font=font(pct_size))
+            cap_x=max(x+100,x+18+(pct_bbox[2]-pct_bbox[0])+16)
+            d.text((x+18,y+42),pct_text,font=font(pct_size),fill=rgb(T["text"]))
+            d.text((cap_x,y+49),cap,font=font(cap_size),fill=text_rgb(e.get("titleColor","muted"),"muted"))
             d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57))
             d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
         elif q == "bar":

@@ -195,9 +195,18 @@ def build():
         for e in elements:
             if e.get("type")=="sensor": sensors.append(sensor_json(e, True))
             elif e.get("type")=="badge": sensors.extend(status_sensors(e))
-        diy.append({"img": f"generated/{fn}", "sensor": sensors, "type": 5})
+        panel_config = {"img": f"generated/{fn}", "sensor": sensors, "type": 5}
+        duration = p.get("duration")
+        if duration is not None:
+            try:
+                seconds = float(duration)
+                if 1 <= seconds <= 3600 and seconds == seconds and seconds != float("inf"):
+                    panel_config["durationSeconds"] = seconds
+            except (TypeError, ValueError):
+                pass
+        diy.append(panel_config)
     O.write_text(json.dumps({"diy":diy,"mianban":list(range(1,len(diy)+1)),"setup":{"refresh":1,"switchTime":str(layout.get("switchTime",6))}}, ensure_ascii=False, indent=2))
-    return {"ok":True,"version":"0.8.10","panels":len(diy)}
+    return {"ok":True,"version":"0.9.0","panels":len(diy)}
 
 def activate():
     result=build(); stamp=time.strftime("%Y%m%d-%H%M%S")

@@ -3,6 +3,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git pkg-config 
 WORKDIR /build
 RUN git clone https://github.com/zehnm/aoostar-rs.git
 WORKDIR /build/aoostar-rs
+COPY patches/asterctl/main.rs /build/aoostar-rs/crates/asterctl/src/main.rs
+COPY patches/asterctl/cfg.rs /build/aoostar-rs/crates/asterctl/src/cfg.rs
 RUN cargo build --release
 
 FROM python:3.12-slim-bookworm
@@ -58,3 +60,6 @@ LABEL org.opencontainers.image.revision="${VCS_REF}"
 WORKDIR /app
 EXPOSE 8765
 CMD ["/app/start.sh"]
+
+COPY app/v090_selftest.py /app/v090_selftest.py
+RUN python3 /app/v090_selftest.py

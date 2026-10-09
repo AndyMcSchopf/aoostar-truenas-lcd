@@ -22,6 +22,7 @@ COPY app/webui.py app/history.py app/render_shared.py /app/
 COPY app/roundtrip_selftest.py /app/roundtrip_selftest.py
 COPY app/v0810_selftest.py /app/v0810_selftest.py
 COPY app/v0811_selftest.py /app/v0811_selftest.py
+COPY app/v0812_selftest.py /app/v0812_selftest.py
 COPY app/v089_selftest.py /app/v089_selftest.py
 COPY app/v0891_selftest.py /app/v0891_selftest.py
 COPY app/v0892_selftest.py /app/v0892_selftest.py
@@ -37,6 +38,7 @@ RUN python3 -m py_compile /app/webui.py /app/history.py /app/truenas-sensors.py 
 RUN python3 /app/roundtrip_selftest.py
 RUN python3 /app/v0810_selftest.py
 RUN python3 /app/v0811_selftest.py
+RUN python3 /app/v0812_selftest.py
 RUN python3 /app/v089_selftest.py
 RUN python3 /app/v0891_selftest.py
 RUN python3 /app/v0892_selftest.py

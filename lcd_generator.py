@@ -1,3 +1,4 @@
+import math
 import re
 #!/usr/bin/env python3
 from pathlib import Path
@@ -127,25 +128,39 @@ def panel(p, i, values, history):
             d.rectangle((x,y+15,x+w,y+30),fill=rgb(a))
             d.text((x+14,y+5),e.get("text",""),font=font(int(e.get("size",15))),fill=text_rgb(e.get("textColor","auto")))
         elif q == "pool":
-            n=int(e.get("index",0)); k=f"truenas_pool_{n}_"; pct=float(values.get(k+"used_percent",0) or 0); col="#CC6666" if pct>=90 else "#FFCC66" if pct>=75 else a
-            name_size=int(e.get("nameSize",15)); pct_size=int(e.get("percentSize",25)); cap_size=int(e.get("capacitySize",18)); fmt=e.get("capacityFormat","compact")
+            n=int(e.get("index",0)); k=f"truenas_pool_{n}_"; pct=float(values.get(k+"used_percent",0) or 0)
+            col="#CC6666" if pct>=90 else "#FFCC66" if pct>=75 else a
+            ns=int(e.get("nameSize",15)); ps=int(e.get("percentSize",25)); cs=int(e.get("capacitySize",18))
+            head=max(30,math.ceil(ns*1.35)+8); row_top=head+10; row_h=math.ceil(max(ps,cs)*1.3)
+            bar_top=row_top+row_h+8; bar_h=11
             used=str(values.get(k+"used","")); total=str(values.get(k+"size","")); free=str(values.get(k+"free",""))
+            fmt=e.get("capacityFormat","compact")
             if fmt=="full": cap=f"{used} / {total}"
             elif fmt=="usedfree": cap=f"BELEGT {used}  FREI {free}"
-            else:
-                short_used=re.sub(r"\s+(TiB|GiB|MiB)$","",used)
-                cap=f"{short_used} / {total}"
+            else: cap=f"{re.sub(r'\s+(TiB|GiB|MiB)$','',used,flags=re.I)} / {total}"
+            title=f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}'
+            def fit(v,sz,limit):
+                if limit<=0:return ""
+                f=font(sz)
+                def width(s):
+                    bb=d.textbbox((0,0),s,font=f);return bb[2]-bb[0]
+                if width(v)<=limit:return v
+                while v and width(v+"…")>limit:v=v[:-1]
+                return v+"…"
             d.rounded_rectangle((x,y,x+w,y+hh),radius=20,fill=rgb(T["panel"]))
-            d.rounded_rectangle((x,y,x+w,y+30),radius=15,fill=rgb(col))
-            d.rectangle((x,y+15,x+w,y+30),fill=rgb(col))
-            d.text((x+14,y+5),f'{values.get(k+"name","POOL")} · {values.get(k+"status","")}',font=font(name_size),fill=(10,10,10))
-            pct_text=f"{pct:.0f}%"
-            pct_bbox=d.textbbox((0,0),pct_text,font=font(pct_size))
-            cap_x=max(x+100,x+18+(pct_bbox[2]-pct_bbox[0])+16)
-            d.text((x+18,y+42),pct_text,font=font(pct_size),fill=rgb(T["text"]))
-            d.text((cap_x,y+49),cap,font=font(cap_size),fill=text_rgb(e.get("titleColor","muted"),"muted"))
-            d.rounded_rectangle((x+18,y+88,x+w-18,y+99),5,fill=(45,49,57))
-            d.rounded_rectangle((x+18,y+88,x+18+(w-36)*pct/100,y+99),5,fill=rgb(col))
+            # Rounded top corners, square bottom corners of the header.
+            d.rounded_rectangle((x,y,x+w,y+head),radius=15,fill=rgb(col))
+            d.rectangle((x,y+15,x+w,y+head),fill=rgb(col))
+            d.text((x+14,y+max(0,(head-ns)//2-2)),fit(title,ns,w-28),font=font(ns),fill=(10,10,10))
+            pct_text=f"{pct:.0f}%"; bb=d.textbbox((0,0),pct_text,font=font(ps)); pw=bb[2]-bb[0]
+            cap_x=max(100,18+pw+16); cap_width=max(0,w-cap_x-14)
+            d.text((x+18,y+row_top),pct_text,font=font(ps),fill=rgb(T["text"]))
+            d.text((x+cap_x,y+row_top),fit(cap,cs,cap_width),font=font(cs),fill=text_rgb(e.get("titleColor","muted"),"muted"))
+            if bar_top+bar_h+12<=hh:
+                d.rounded_rectangle((x+18,y+bar_top,x+w-18,y+bar_top+bar_h),5,fill=(45,49,57))
+                d.rounded_rectangle((x+18,y+bar_top,x+18+(w-36)*max(0,min(100,pct))/100,y+bar_top+bar_h),5,fill=rgb(col))
+            else:
+                d.rectangle((x+2,y+hh-3,x+w-2,y+hh-1),fill=(255,179,71))
         elif q == "bar":
             value=numeric(values.get(e.get("label"),0),0)
             minimum=numeric(e.get("min",0),0); maximum=numeric(e.get("max",100),100); pct=max(0.0,min(1.0,(value-minimum)/max(0.000001,maximum-minimum)))

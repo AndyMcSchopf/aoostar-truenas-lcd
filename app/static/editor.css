@@ -48,3 +48,8 @@
 /* v0.8.11: preserve configured pixel font size; LCD preview scales full 960x376 image. */
 .poolobj .cardhead{border-radius:15px 15px 0 0;overflow:hidden;white-space:nowrap}
 .poolcap{white-space:nowrap}
+
+/* v0.8.12: pool content geometry is derived from font sizes. */
+.poolobj.pool-overflow{outline:2px solid #ffb347;outline-offset:-2px}
+.poolobj .cardhead{box-sizing:border-box;border-radius:16px 16px 0 0}
+.poolobj .poolpct,.poolobj .poolcap{box-sizing:border-box;position:absolute;font-weight:700}

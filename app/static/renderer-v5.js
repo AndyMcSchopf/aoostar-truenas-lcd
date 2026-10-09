@@ -14,5 +14,5 @@
   const pts=nums.map((n,k)=>`${k/(nums.length-1)*w},${h-Math.max(0,Math.min(1,n/mx))*h}`).join(" "),area=`0,${h} ${pts} ${w},${h}`;
   return `<svg class="obj ${i===ei?"selected":""}" data-i="${i}" style="left:${z.x}px;top:${z.y}px;overflow:hidden" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><clipPath id="clip${i}"><rect width="${w}" height="${h}"/></clipPath></defs><g clip-path="url(#clip${i})"><polygon points="${area}" fill="${a}" fill-opacity=".07"/><polyline points="${pts}" fill="none" stroke="${a}" stroke-width="3"/></g></svg>`;
  }
- window.html=function(z,i,t){if(z.type==="pool")return pool(z,i);if(z.type==="sparkline")return spark(z,i,C(z.accent));return previous(z,i,t);};
+ window.html=function(z,i,t){/* Pool rendering belongs to editor.js (responsive renderer). */if(z.type==="sparkline")return spark(z,i,C(z.accent));return previous(z,i,t);};
 })();

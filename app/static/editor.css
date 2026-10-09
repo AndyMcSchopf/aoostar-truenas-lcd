@@ -53,3 +53,7 @@
 .poolobj.pool-overflow{outline:2px solid #ffb347;outline-offset:-2px}
 .poolobj .cardhead{box-sizing:border-box;border-radius:16px 16px 0 0}
 .poolobj .poolpct,.poolobj .poolcap{box-sizing:border-box;position:absolute;font-weight:700}
+
+/* v0.8.13 pool typography: explicit component-level styling */
+.poolobj .poolhead{font-weight:700;white-space:nowrap;overflow:hidden;}
+.poolobj .poolpct,.poolobj .poolcap{font-weight:700;white-space:nowrap;overflow:hidden;}
